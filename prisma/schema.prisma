@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String?  @unique
+  startingBankroll  Float    @default(1000)
+  currentBankroll   Float    @default(1000)
+  minBetSize        Float    @default(10)
+  maxBetSize        Float    @default(500)
+  useKellyCriterion Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  bets              Bet[]
+  sportsbooks       UserSportsbook[]
+  snapshots         BankrollSnapshot[]
+}
+
+model Sportsbook {
+  id          String   @id @default(cuid())
+  name        String   @unique // "DraftKings", "FanDuel", etc.
+  apiKey      String   // The Odds API key for this book
+  isActive    Boolean  @default(true)
+
+  userBooks   UserSportsbook[]
+  bets        Bet[]
+}
+
+model UserSportsbook {
+  id           String     @id @default(cuid())
+  userId       String
+  sportsbookId String
+  isActive     Boolean    @default(true)
+
+  user         User       @relation(fields: [userId], references: [id])
+  sportsbook   Sportsbook @relation(fields: [sportsbookId], references: [id])
+
+  @@unique([userId, sportsbookId])
+}
+
+model Bet {
+  id                String    @id @default(cuid())
+  userId            String
+  sportsbookId      String
+
+  // Matchup Details
+  sport             String    // "NFL", "NBA", etc.
+  homeTeam          String
+  awayTeam          String
+  gameDate          DateTime
+
+  // Prediction Details
+  prediction        String    // "Home Win", "Away Win", "Draw", "Over", "Under"
+  confidence        Float     // 0-100
+  aiReasoning       String    @db.Text
+
+  // Odds Details
+  betType           String    // "Moneyline", "Spread", "Total"
+  odds              Float     // American odds (-110, +150, etc.)
+  oddsDecimal       Float?
+  line              Float?    // For spreads/totals
+
+  // Bet Details
+  betSize           Float
+  potentialPayout   Float
+
+  // Result
+  status            String    @default("Pending") // "Pending", "Won", "Lost", "Push"
+  actualResult      String?   // Actual game outcome
+  profit            Float?    // Net profit/loss
+  settledAt         DateTime?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User       @relation(fields: [userId], references: [id])
+  sportsbook        Sportsbook @relation(fields: [sportsbookId], references: [id])
+
+  @@index([userId, status])
+  @@index([sport])
+}
+
+model BankrollSnapshot {
+  id         String   @id @default(cuid())
+  userId     String
+  bankroll   Float
+  timestamp  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, timestamp])
+}

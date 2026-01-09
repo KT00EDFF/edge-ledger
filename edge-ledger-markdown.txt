@@ -1,0 +1,438 @@
+# **COMPLETE PROMPT FOR CLAUDE CODE**
+
+## **Project Overview**
+Build a full-stack Sports Betting Analytics & Prediction Platform that leverages AI predictions, real-time odds data, and bankroll management to track and analyze sports betting performance.
+
+## **Core Functionality**
+
+### **1. Prediction Engine**
+- Integration with OpenAI API (GPT-4) for match outcome predictions
+- Input: Sport type, teams/competitors, date, and any additional context
+- Output: 
+  - Win/loss/draw prediction
+  - Confidence level (0-100%)
+  - Reasoning breakdown
+  - Key factors considered
+- Prompt engineering template optimized for sports analysis:
+  - Historical performance data context
+  - Recent form analysis
+  - Head-to-head statistics
+  - Injury reports consideration
+  - Home/away advantage factors
+
+### **2. Odds Aggregation & Book Selection**
+- Integration with The Odds API (https://the-odds-api.com)
+- Fetch real-time odds across multiple sportsbooks
+- User-configurable "My Books" list (books where user has accounts)
+- Automatic selection of best odds among user's available books
+- Display odds in American, Decimal, and Fractional formats
+- Support for multiple bet types: Moneyline, Spread, Totals (Over/Under)
+
+### **3. Bankroll Management System**
+- Starting bankroll configuration
+- Dynamic bet sizing based on:
+  - **Kelly Criterion** implementation (optional, user-toggleable)
+  - Confidence level from AI prediction (60-70% = 1-2% of bankroll, 70-80% = 2-4%, 80-90% = 4-6%, 90%+ = 6-8%)
+  - User-defined min/max bet thresholds (e.g., never bet less than $10 or more than $500)
+  - Current bankroll size (adjust percentage as bankroll grows/shrinks)
+- Real-time bankroll tracking with adjustment after bet results
+
+### **4. Bet Logging & Confirmation Workflow**
+**New Bet Flow:**
+1. User inputs matchup details
+2. System generates AI prediction with confidence
+3. System fetches current odds from user's books
+4. System recommends optimal book and bet size
+5. **User reviews and confirms** bet details before logging
+6. Bet logged as "Pending" in database
+
+**Bet Settlement:**
+- Manual settlement option (user marks win/loss)
+- Automated settlement via The Odds API (check final scores)
+- Update bankroll automatically
+- Move bet from "Pending" to "Settled"
+
+### **5. Dashboard & Analytics**
+
+**Homepage Metrics:**
+- Current Bankroll (large, prominent display)
+- Total P&L (profit/loss with percentage change)
+- All-Time Win Rate percentage
+- Recent performance (Last 5, 10, 25 bets)
+- ROI (Return on Investment) percentage
+
+**Visualizations:**
+1. **Bankroll Timeline Graph** 
+   - Line chart showing bankroll over time
+   - Annotation markers for major wins/losses
+   - Time range selectors (7D, 30D, 90D, 1Y, All)
+
+2. **Win Rate by Sport** 
+   - Bar chart or pie chart
+   - Filter: NFL, NBA, MLB, NHL, Soccer, etc.
+
+3. **Performance by Confidence Level**
+   - Scatter plot or grouped bar chart
+   - X-axis: Confidence ranges (60-70%, 70-80%, 80-90%, 90%+)
+   - Y-axis: Win rate in that range
+   - Helps identify if AI is well-calibrated
+
+4. **Bet Size Distribution**
+   - Histogram showing bet amounts
+   - Identify betting patterns
+
+5. **Recent Bets Table**
+   - Last 20 bets with: Date, Sport, Matchup, Prediction, Odds, Bet Size, Result, P&L
+   - Sortable and filterable
+
+**Filters:**
+- By Sport (multi-select)
+- By Date Range (calendar picker)
+- By Result (Win/Loss/Push/Pending)
+- By Confidence Level (slider)
+- By Sportsbook
+
+## **Technical Architecture**
+
+### **Tech Stack Recommendation**
+
+**Frontend:**
+- **Framework:** Next.js 14 (App Router)
+- **Styling:** Tailwind CSS + shadcn/ui components
+- **Charts:** Recharts or Chart.js
+- **State Management:** React Query for server state, Zustand for client state
+- **Form Handling:** React Hook Form + Zod validation
+
+**Backend:**
+- **API Routes:** Next.js API routes
+- **Database:** PostgreSQL (via Supabase or Railway)
+- **ORM:** Prisma
+- **Authentication:** NextAuth.js (optional, for future multi-user support)
+
+**External APIs:**
+- OpenAI API (GPT-4 or GPT-4-turbo)
+- The Odds API
+- (Optional) Sports data APIs for historical stats: ESPN API, SportsData.io
+
+**Deployment:**
+- Vercel (frontend + API routes)
+- Database: Supabase free tier or Railway
+
+### **Database Schema**
+
+```prisma
+model User {
+  id                String   @id @default(cuid())
+  email             String?  @unique
+  startingBankroll  Float    @default(1000)
+  currentBankroll   Float    @default(1000)
+  minBetSize        Float    @default(10)
+  maxBetSize        Float    @default(500)
+  useKellyCriterion Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  bets              Bet[]
+  sportsbooks       UserSportsbook[]
+}
+
+model Sportsbook {
+  id          String   @id @default(cuid())
+  name        String   @unique // "DraftKings", "FanDuel", etc.
+  apiKey      String   // The Odds API key for this book
+  isActive    Boolean  @default(true)
+  
+  userBooks   UserSportsbook[]
+  bets        Bet[]
+}
+
+model UserSportsbook {
+  id           String     @id @default(cuid())
+  userId       String
+  sportsbookId String
+  isActive     Boolean    @default(true)
+  
+  user         User       @relation(fields: [userId], references: [id])
+  sportsbook   Sportsbook @relation(fields: [sportsbookId], references: [id])
+  
+  @@unique([userId, sportsbookId])
+}
+
+model Bet {
+  id                String    @id @default(cuid())
+  userId            String
+  sportsbookId      String
+  
+  // Matchup Details
+  sport             String    // "NFL", "NBA", etc.
+  homeTeam          String
+  awayTeam          String
+  gameDate          DateTime
+  
+  // Prediction Details
+  prediction        String    // "Home Win", "Away Win", "Draw", "Over", "Under"
+  confidence        Float     // 0-100
+  aiReasoning       String    @db.Text
+  
+  // Odds Details
+  betType           String    // "Moneyline", "Spread", "Total"
+  odds              Float     // American odds (-110, +150, etc.)
+  oddsDecimal       Float?
+  line              Float?    // For spreads/totals
+  
+  // Bet Details
+  betSize           Float
+  potentialPayout   Float
+  
+  // Result
+  status            String    @default("Pending") // "Pending", "Won", "Lost", "Push"
+  actualResult      String?   // Actual game outcome
+  profit            Float?    // Net profit/loss
+  settledAt         DateTime?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User       @relation(fields: [userId], references: [id])
+  sportsbook        Sportsbook @relation(fields: [sportsbookId], references: [id])
+  
+  @@index([userId, status])
+  @@index([sport])
+}
+
+model BankrollSnapshot {
+  id         String   @id @default(cuid())
+  userId     String
+  bankroll   Float
+  timestamp  DateTime @default(now())
+  
+  @@index([userId, timestamp])
+}
+```
+
+### **File Structure**
+
+```
+sports-betting-analytics/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx                    # Dashboard/Homepage
+│   │   ├── new-bet/
+│   │   │   └── page.tsx                # New prediction flow
+│   │   ├── bets/
+│   │   │   ├── page.tsx                # Bet history
+│   │   │   └── [id]/
+│   │   │       └── page.tsx            # Individual bet details
+│   │   ├── settings/
+│   │   │   └── page.tsx                # Bankroll config, sportsbooks
+│   │   └── api/
+│   │       ├── predictions/
+│   │       │   └── route.ts            # OpenAI prediction endpoint
+│   │       ├── odds/
+│   │       │   └── route.ts            # The Odds API proxy
+│   │       ├── bets/
+│   │       │   ├── route.ts            # CRUD for bets
+│   │       │   └── [id]/
+│   │       │       └── settle/
+│   │       │           └── route.ts    # Settle bet endpoint
+│   │       └── analytics/
+│   │           └── route.ts            # Analytics data aggregation
+│   ├── components/
+│   │   ├── ui/                         # shadcn components
+│   │   ├── dashboard/
+│   │   │   ├── BankrollCard.tsx
+│   │   │   ├── BankrollChart.tsx
+│   │   │   ├── WinRateChart.tsx
+│   │   │   ├── RecentBetsTable.tsx
+│   │   │   └── MetricsGrid.tsx
+│   │   ├── bets/
+│   │   │   ├── PredictionForm.tsx
+│   │   │   ├── OddsDisplay.tsx
+│   │   │   ├── BetConfirmation.tsx
+│   │   │   └── BetSizeCalculator.tsx
+│   │   └── layout/
+│   │       ├── Navbar.tsx
+│   │       └── Sidebar.tsx
+│   ├── lib/
+│   │   ├── prisma.ts                   # Prisma client
+│   │   ├── openai.ts                   # OpenAI client & prompts
+│   │   ├── odds-api.ts                 # The Odds API client
+│   │   ├── bet-sizing.ts               # Kelly Criterion & sizing logic
+│   │   └── analytics.ts                # Analytics calculations
+│   ├── hooks/
+│   │   ├── useBets.ts
+│   │   ├── useAnalytics.ts
+│   │   └── useBankroll.ts
+│   └── types/
+│       └── index.ts                    # TypeScript interfaces
+├── prisma/
+│   ├── schema.prisma
+│   └── migrations/
+├── public/
+├── .env.local
+├── package.json
+├── tailwind.config.ts
+└── tsconfig.json
+```
+
+## **Implementation Phases**
+
+### **Phase 1: Foundation & Setup**
+- Initialize Next.js project with TypeScript
+- Set up Prisma with PostgreSQL
+- Install dependencies (shadcn/ui, Recharts, etc.)
+- Create database schema and run migrations
+- Set up environment variables for API keys
+- Create basic layout and navigation
+
+### **Phase 2: Prediction Engine**
+- Build OpenAI integration with sports-optimized prompts
+- Create prediction form UI
+- Implement matchup input with sport selection
+- Display AI prediction with confidence and reasoning
+- Test with various sports and matchups
+
+### **Phase 3: Odds Integration**
+- Integrate The Odds API
+- Create sportsbook management (add/remove books)
+- Fetch and display odds for matchup
+- Implement best odds selection among user's books
+- Handle different bet types (moneyline, spread, totals)
+
+### **Phase 4: Bet Sizing & Logging**
+- Implement dynamic bet sizing algorithm
+- Build bet confirmation interface
+- Create bet logging functionality
+- Implement bankroll adjustment logic
+- Build bet settlement workflow (manual)
+
+### **Phase 5: Dashboard & Analytics**
+- Design and implement dashboard layout
+- Build bankroll timeline chart
+- Create win rate visualizations
+- Implement performance metrics cards
+- Add recent bets table with filters
+- Build sport-specific analytics
+
+### **Phase 6: Advanced Features & Polish**
+- Implement automated bet settlement (scores API)
+- Add confidence calibration analysis
+- Build export functionality (CSV/PDF reports)
+- Add notification system for pending bets
+- Implement Kelly Criterion option
+- Performance optimization and error handling
+
+## **Key Features Detail**
+
+### **AI Prediction Prompt Template**
+```typescript
+const predictionPrompt = `
+You are an expert sports analyst. Analyze the following matchup and provide a detailed prediction.
+
+Sport: ${sport}
+Home Team: ${homeTeam}
+Away Team: ${awayTeam}
+Date: ${gameDate}
+
+Please provide:
+1. Your prediction (Home Win/Away Win/Draw or Over/Under for totals)
+2. Confidence level (0-100%)
+3. Key factors influencing your prediction (3-5 bullet points)
+4. Any concerns or uncertainties
+
+Consider:
+- Recent team performance and form
+- Head-to-head history
+- Home/away splits
+- Injuries and lineup changes
+- Motivation factors (playoff implications, rivalry, etc.)
+- Weather conditions (if outdoor sport)
+
+Format your response as JSON:
+{
+  "prediction": "Home Win",
+  "confidence": 72,
+  "reasoning": "...",
+  "keyFactors": ["...", "...", "..."],
+  "concerns": "..."
+}
+`;
+```
+
+### **Bet Sizing Algorithm**
+```typescript
+function calculateBetSize(
+  bankroll: number,
+  confidence: number,
+  minBet: number,
+  maxBet: number,
+  useKelly: boolean = false
+): number {
+  if (useKelly) {
+    // Kelly Criterion: f = (bp - q) / b
+    // where b = odds, p = probability, q = 1-p
+    // Simplified for demonstration
+    const fraction = (confidence / 100 - 0.5) * 0.1; // Conservative Kelly
+    return Math.max(minBet, Math.min(maxBet, bankroll * fraction));
+  }
+  
+  // Confidence-based sizing
+  let percentage;
+  if (confidence >= 90) percentage = 0.07;
+  else if (confidence >= 80) percentage = 0.05;
+  else if (confidence >= 70) percentage = 0.03;
+  else if (confidence >= 60) percentage = 0.015;
+  else percentage = 0.01;
+  
+  const betSize = bankroll * percentage;
+  return Math.max(minBet, Math.min(maxBet, betSize));
+}
+```
+
+## **Environment Variables Needed**
+```env
+DATABASE_URL="postgresql://..."
+OPENAI_API_KEY="sk-..."
+ODDS_API_KEY="..." # From The Odds API
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+## **Testing & Quality Assurance**
+- Unit tests for bet sizing calculations
+- Integration tests for API routes
+- E2E tests for critical flows (new bet, settlement)
+- Mock API responses for development
+- Error boundary implementation
+- Loading states for all async operations
+
+## **Future Enhancements**
+- Multi-user support with authentication
+- Parlay/multi-bet support
+- Live odds tracking with notifications
+- Machine learning model to improve predictions over time
+- Betting streak tracking and achievements
+- Social features (leaderboards, sharing picks)
+- Mobile app (React Native)
+- Webhook integration for automatic settlements
+
+---
+
+## **Getting Started Instructions for Claude Code**
+
+Please build this application following the phases outlined above. Start with Phase 1 to establish the foundation, then proceed through each phase sequentially. 
+
+**Priority for MVP:**
+- Phases 1-4 are critical for core functionality
+- Phase 5 is needed for the user experience
+- Phase 6 can be implemented iteratively
+
+**Key Success Criteria:**
+1. User can input a matchup and get an AI prediction
+2. System fetches real odds and suggests best book
+3. User can confirm and log bets
+4. Bankroll adjusts automatically
+5. Dashboard shows clear performance analytics
+6. User can track which predictions are working
+
+Begin with Phase 1 and confirm the setup before proceeding to the prediction engine.
