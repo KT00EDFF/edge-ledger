@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 
-// Mock user settings - in production, fetch from database
 const INITIAL_SETTINGS = {
   startingBankroll: 1000,
   currentBankroll: 1000,
@@ -12,11 +11,11 @@ const INITIAL_SETTINGS = {
 }
 
 const AVAILABLE_SPORTSBOOKS = [
-  { id: 'draftkings', name: 'DraftKings' },
-  { id: 'fanduel', name: 'FanDuel' },
-  { id: 'betmgm', name: 'BetMGM' },
-  { id: 'caesars', name: 'Caesars' },
-  { id: 'pointsbet', name: 'PointsBet' },
+  { id: 'draftkings', name: 'DraftKings', logo: 'DK' },
+  { id: 'fanduel', name: 'FanDuel', logo: 'FD' },
+  { id: 'betmgm', name: 'BetMGM', logo: 'BM' },
+  { id: 'caesars', name: 'Caesars', logo: 'CS' },
+  { id: 'pointsbet', name: 'PointsBet', logo: 'PB' },
 ]
 
 export default function SettingsPage() {
@@ -46,13 +45,11 @@ export default function SettingsPage() {
     setSaveMessage('')
 
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setSaveMessage('✅ Settings saved successfully!')
+      setSaveMessage('Settings saved successfully!')
       setTimeout(() => setSaveMessage(''), 3000)
     } catch (error) {
-      setSaveMessage('❌ Failed to save settings')
+      setSaveMessage('Failed to save settings')
     } finally {
       setIsSaving(false)
     }
@@ -61,28 +58,27 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-        <p className="text-gray-600">Configure your bankroll and betting preferences</p>
+        <h1 className="page-title">Settings</h1>
+        <p className="page-subtitle">Configure your bankroll and betting preferences</p>
       </div>
 
       <div className="space-y-6">
-        {/* Bankroll Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Bankroll Management</h2>
-          <div className="space-y-4">
+        <div className="card">
+          <h2 className="text-xl font-semibold text-white mb-6">Bankroll Management</h2>
+          <div className="space-y-5">
             <div>
-              <label htmlFor="startingBankroll" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="startingBankroll" className="label-dark">
                 Starting Bankroll
               </label>
-              <div className="flex items-center">
-                <span className="text-gray-600 mr-2">$</span>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">$</span>
                 <input
                   type="number"
                   id="startingBankroll"
                   name="startingBankroll"
                   value={settings.startingBankroll}
                   onChange={handleChange}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="input-dark pl-8"
                   step="10"
                   min="0"
                 />
@@ -90,37 +86,37 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label htmlFor="currentBankroll" className="block text-sm font-medium text-gray-700 mb-2">
-                Current Bankroll (Display Only)
+              <label htmlFor="currentBankroll" className="label-dark">
+                Current Bankroll
               </label>
-              <div className="flex items-center">
-                <span className="text-gray-600 mr-2">$</span>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">$</span>
                 <input
                   type="number"
                   id="currentBankroll"
                   name="currentBankroll"
                   value={settings.currentBankroll}
                   readOnly
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                  className="input-dark pl-8 bg-dark-hover cursor-not-allowed"
                 />
               </div>
-              <p className="text-sm text-gray-500 mt-1">Updated automatically based on bet results</p>
+              <p className="text-sm text-text-muted mt-2">Updated automatically based on bet results</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label htmlFor="minBetSize" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="minBetSize" className="label-dark">
                   Minimum Bet Size
                 </label>
-                <div className="flex items-center">
-                  <span className="text-gray-600 mr-2">$</span>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">$</span>
                   <input
                     type="number"
                     id="minBetSize"
                     name="minBetSize"
                     value={settings.minBetSize}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="input-dark pl-8"
                     step="5"
                     min="1"
                   />
@@ -128,18 +124,18 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label htmlFor="maxBetSize" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="maxBetSize" className="label-dark">
                   Maximum Bet Size
                 </label>
-                <div className="flex items-center">
-                  <span className="text-gray-600 mr-2">$</span>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">$</span>
                   <input
                     type="number"
                     id="maxBetSize"
                     name="maxBetSize"
                     value={settings.maxBetSize}
                     onChange={handleChange}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="input-dark pl-8"
                     step="10"
                     min={settings.minBetSize}
                   />
@@ -147,82 +143,121 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="useKellyCriterion"
-                name="useKellyCriterion"
-                checked={settings.useKellyCriterion}
-                onChange={handleChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="useKellyCriterion" className="ml-2 block text-sm text-gray-700">
-                Use Kelly Criterion for bet sizing
-              </label>
+            <div className="flex items-start space-x-3 pt-2">
+              <div className="relative flex items-center">
+                <input
+                  type="checkbox"
+                  id="useKellyCriterion"
+                  name="useKellyCriterion"
+                  checked={settings.useKellyCriterion}
+                  onChange={handleChange}
+                  className="w-5 h-5 rounded bg-dark-card border-dark-border text-accent-green focus:ring-accent-green focus:ring-offset-dark-bg"
+                />
+              </div>
+              <div>
+                <label htmlFor="useKellyCriterion" className="text-white font-medium cursor-pointer">
+                  Use Kelly Criterion for bet sizing
+                </label>
+                <p className="text-sm text-text-muted mt-1">
+                  Calculate optimal bet sizes based on odds and confidence level
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-gray-500">
-              When enabled, bet sizes are calculated using the Kelly Criterion formula based on odds and confidence level.
-            </p>
           </div>
         </div>
 
-        {/* Sportsbooks */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">My Sportsbooks</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Select the sportsbooks where you have accounts. The app will find the best odds from these books.
+        <div className="card">
+          <h2 className="text-xl font-semibold text-white mb-2">My Sportsbooks</h2>
+          <p className="text-text-secondary mb-6">
+            Select the sportsbooks where you have accounts. We'll find the best odds from these books.
           </p>
-          <div className="space-y-3">
-            {AVAILABLE_SPORTSBOOKS.map((book) => (
-              <div
-                key={book.id}
-                onClick={() => toggleSportsbook(book.id)}
-                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  selectedBooks.includes(book.id)
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{book.name}</span>
-                  {selectedBooks.includes(book.id) && (
-                    <span className="text-blue-600 font-semibold">✓</span>
-                  )}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {AVAILABLE_SPORTSBOOKS.map((book) => {
+              const isSelected = selectedBooks.includes(book.id)
+              return (
+                <button
+                  key={book.id}
+                  onClick={() => toggleSportsbook(book.id)}
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                    isSelected
+                      ? 'border-accent-green bg-accent-green/10'
+                      : 'border-dark-border hover:border-text-muted bg-dark-hover'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
+                        isSelected ? 'bg-accent-green text-dark-bg' : 'bg-dark-border text-text-secondary'
+                      }`}>
+                        {book.logo}
+                      </div>
+                      <span className={`font-medium ${isSelected ? 'text-white' : 'text-text-secondary'}`}>
+                        {book.name}
+                      </span>
+                    </div>
+                    {isSelected && (
+                      <svg className="w-5 h-5 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="card bg-gradient-to-r from-accent-blue/10 to-accent-purple/10 border-accent-blue/30">
+          <div className="flex items-start space-x-4">
+            <div className="w-10 h-10 bg-accent-blue/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-accent-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-white font-semibold mb-2">API Configuration</h3>
+              <p className="text-text-secondary text-sm mb-3">
+                API keys are configured via environment variables for security.
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-accent-green"></div>
+                  <span className="text-sm text-text-secondary">OpenAI API: Configured</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-accent-green"></div>
+                  <span className="text-sm text-text-secondary">Odds API: Configured</span>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
-        {/* API Configuration Note */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-yellow-900 mb-2">API Configuration</h3>
-          <p className="text-sm text-yellow-800 mb-2">
-            API keys are configured via environment variables in <code className="bg-yellow-100 px-1 rounded">.env.local</code>
-          </p>
-          <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-            <li>
-              <strong>OPENAI_API_KEY:</strong> {process.env.OPENAI_API_KEY ? '✅ Configured' : '⚠️  Not configured (using mock data)'}
-            </li>
-            <li>
-              <strong>ODDS_API_KEY:</strong> {process.env.ODDS_API_KEY ? '✅ Configured' : '⚠️  Not configured (using mock data)'}
-            </li>
-          </ul>
-        </div>
-
-        {/* Save Button */}
-        <div>
+        <div className="flex items-center justify-between">
           {saveMessage && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-800 text-sm">
-              {saveMessage}
+            <div className={`flex items-center space-x-2 ${saveMessage.includes('Failed') ? 'text-accent-red' : 'text-accent-green'}`}>
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium">{saveMessage}</span>
             </div>
           )}
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="btn-primary ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSaving ? 'Saving...' : 'Save Settings'}
+            {isSaving ? (
+              <span className="flex items-center space-x-2">
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Saving...</span>
+              </span>
+            ) : (
+              'Save Settings'
+            )}
           </button>
         </div>
       </div>

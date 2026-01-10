@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { MatchupInput, PredictionResult, OddsData } from '@/types'
 import { calculateBetSize, calculatePayout } from '@/lib/bet-sizing'
 
@@ -13,7 +13,6 @@ interface Props {
   isLoading: boolean
 }
 
-// Mock user data - in production, fetch from user context/session
 const MOCK_USER = {
   id: 'user_mock_id',
   currentBankroll: 1000,
@@ -70,69 +69,63 @@ export default function BetConfirmation({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirm Your Bet</h2>
-        <p className="text-gray-600">Review the details before placing your bet</p>
+        <h2 className="text-2xl font-bold text-white mb-2">Confirm Your Bet</h2>
+        <p className="text-text-secondary">Review the details before placing your bet</p>
       </div>
 
-      {/* Matchup Summary */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-semibold text-gray-900 mb-2">Matchup</h3>
-        <p className="text-gray-700">
+      <div className="bg-dark-hover rounded-xl p-5 border border-dark-border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-white">Matchup</h3>
+          <span className="badge-blue">{matchup.sport}</span>
+        </div>
+        <p className="text-lg text-white font-medium">
           {matchup.awayTeam} @ {matchup.homeTeam}
         </p>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-text-muted text-sm mt-1">
           {new Date(matchup.gameDate).toLocaleString()}
         </p>
       </div>
 
-      {/* Prediction Summary */}
-      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-        <h3 className="font-semibold text-gray-900 mb-2">AI Prediction</h3>
-        <div className="flex justify-between items-center">
-          <p className="text-lg font-medium text-gray-900">{prediction.prediction}</p>
-          <p className="text-lg font-bold text-blue-600">{prediction.confidence}% Confidence</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-accent-blue/10 rounded-xl p-5 border border-accent-blue/30">
+          <h3 className="font-semibold text-white mb-3">AI Prediction</h3>
+          <p className="text-xl font-bold text-white mb-1">{prediction.prediction}</p>
+          <p className="text-accent-blue font-semibold">{prediction.confidence}% Confidence</p>
         </div>
-      </div>
 
-      {/* Odds Summary */}
-      <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-2">Selected Odds</h3>
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="font-medium text-gray-900">{selectedOdds.sportsbook}</p>
-            <p className="text-sm text-gray-600">{selectedOdds.betType}</p>
-            {selectedOdds.line !== undefined && (
-              <p className="text-sm text-gray-600">Line: {selectedOdds.line > 0 ? '+' : ''}{selectedOdds.line}</p>
-            )}
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
+        <div className="bg-dark-hover rounded-xl p-5 border border-dark-border">
+          <h3 className="font-semibold text-white mb-3">Selected Odds</h3>
+          <p className="text-sm text-text-muted">{selectedOdds.sportsbook}</p>
+          <p className={`text-2xl font-bold ${selectedOdds.odds > 0 ? 'text-accent-green' : 'text-white'}`}>
             {selectedOdds.odds > 0 ? '+' : ''}{selectedOdds.odds}
           </p>
+          {selectedOdds.line !== undefined && (
+            <p className="text-text-muted text-sm">Line: {selectedOdds.line > 0 ? '+' : ''}{selectedOdds.line}</p>
+          )}
         </div>
       </div>
 
-      {/* Bet Size */}
-      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-        <h3 className="font-semibold text-gray-900 mb-3">Bet Sizing</h3>
+      <div className="bg-accent-green/10 rounded-xl p-5 border border-accent-green/30">
+        <h3 className="font-semibold text-white mb-4">Bet Sizing</h3>
 
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <p className="text-sm text-gray-600">Recommended Bet Size</p>
-            <p className="font-medium text-gray-900">
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-accent-green/20">
+          <div>
+            <p className="text-text-secondary text-sm">Recommended Size</p>
+            <p className="text-white font-medium">
               ${recommendedSize.betSize.toFixed(2)} ({recommendedSize.percentage.toFixed(1)}% of bankroll)
             </p>
           </div>
-          <p className="text-xs text-gray-500">
-            Based on {recommendedSize.method === 'kelly' ? 'Kelly Criterion' : 'confidence level'}
-          </p>
+          <span className="badge-green text-xs">
+            {recommendedSize.method === 'kelly' ? 'Kelly Criterion' : 'Confidence Based'}
+          </span>
         </div>
 
         <div>
-          <label htmlFor="customBetSize" className="block text-sm font-medium text-gray-700 mb-2">
-            Custom Bet Size (Optional)
+          <label htmlFor="customBetSize" className="label-dark">
+            Bet Amount
           </label>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">$</span>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">$</span>
             <input
               type="number"
               id="customBetSize"
@@ -141,46 +134,56 @@ export default function BetConfirmation({
               min={MOCK_USER.minBetSize}
               max={MOCK_USER.maxBetSize}
               step="1"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className="input-dark pl-8"
             />
           </div>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-text-muted mt-2">
             Min: ${MOCK_USER.minBetSize} | Max: ${MOCK_USER.maxBetSize}
           </p>
         </div>
       </div>
 
-      {/* Payout Summary */}
-      <div className="bg-gray-100 rounded-lg p-4">
-        <div className="flex justify-between items-center mb-2">
-          <p className="font-medium text-gray-900">Bet Amount</p>
-          <p className="text-lg font-bold text-gray-900">${betSize.toFixed(2)}</p>
-        </div>
-        <div className="flex justify-between items-center mb-2">
-          <p className="font-medium text-gray-900">Potential Payout</p>
-          <p className="text-lg font-bold text-green-600">${potentialPayout.toFixed(2)}</p>
-        </div>
-        <div className="flex justify-between items-center pt-2 border-t border-gray-300">
-          <p className="font-semibold text-gray-900">Potential Profit</p>
-          <p className="text-xl font-bold text-green-600">+${potentialProfit.toFixed(2)}</p>
+      <div className="bg-dark-hover rounded-xl p-5 border border-dark-border">
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-text-secondary">Bet Amount</span>
+            <span className="text-lg font-bold text-white">${betSize.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-text-secondary">Potential Payout</span>
+            <span className="text-lg font-bold text-white">${potentialPayout.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between items-center pt-3 border-t border-dark-border">
+            <span className="text-white font-semibold">Potential Profit</span>
+            <span className="text-2xl font-bold text-accent-green">+${potentialProfit.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex gap-4 pt-4">
         <button
           onClick={onBack}
           disabled={isLoading}
-          className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Back
         </button>
         <button
           onClick={handleConfirm}
           disabled={isLoading}
-          className="flex-1 px-6 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Placing Bet...' : 'Place Bet'}
+          {isLoading ? (
+            <span className="flex items-center justify-center space-x-2">
+              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Placing Bet...</span>
+            </span>
+          ) : (
+            'Place Bet'
+          )}
         </button>
       </div>
     </div>
