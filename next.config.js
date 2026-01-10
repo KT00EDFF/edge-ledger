@@ -2,7 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
-  allowedDevOrigins: ['*'],
+  allowedDevOrigins: [
+    'https://*.replit.dev',
+    'https://*.kirk.replit.dev',
+    'https://*.repl.co',
+  ],
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
