@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
-  // Enable experimental features for better performance
+  allowedDevOrigins: ['*'],
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
