@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useNewBet } from '@/lib/new-bet-context'
 
 export default function AiInsightsPanel() {
-  const { state, dispatch, toggleAI } = useNewBet()
+  const { state, dispatch, toggleAI, selectBet } = useNewBet()
 
   useEffect(() => {
     if (!state.aiEnabled || !state.selectedMatchup) return
@@ -29,6 +29,7 @@ export default function AiInsightsPanel() {
         dispatch({ type: 'SET_AI_PREDICTION', prediction: data })
       } catch (error) {
         console.error('AI prediction error:', error)
+        dispatch({ type: 'SET_AI_PREDICTION', prediction: null })
       } finally {
         dispatch({ type: 'SET_AI_LOADING', loading: false })
       }
@@ -36,6 +37,47 @@ export default function AiInsightsPanel() {
 
     fetchPrediction()
   }, [state.aiEnabled, state.selectedMatchup, state.selectedSport, dispatch])
+
+  const handleApplyBestBet = () => {
+    if (!state.aiPrediction?.recommendedBet || !state.selectedMatchup) return
+    
+    const { recommendedBet } = state.aiPrediction
+    
+    const matchingOdds = state.odds.find(o => {
+      if (recommendedBet.betType === 'moneyline' && o.moneyline) return true
+      if (recommendedBet.betType === 'spread' && o.spreads) return true
+      if (recommendedBet.betType === 'total' && o.totals) return true
+      return false
+    })
+    
+    let odds = -110
+    if (matchingOdds) {
+      if (recommendedBet.betType === 'moneyline' && matchingOdds.moneyline) {
+        odds = matchingOdds.moneyline.home
+      } else if (recommendedBet.betType === 'spread' && matchingOdds.spreads) {
+        odds = matchingOdds.spreads.home.price
+      } else if (recommendedBet.betType === 'total' && matchingOdds.totals) {
+        odds = matchingOdds.totals.over.price
+      }
+    }
+    
+    selectBet({
+      bookmaker: matchingOdds?.bookmaker || 'Best Available',
+      betType: recommendedBet.betType,
+      selection: recommendedBet.selection,
+      line: recommendedBet.line,
+      odds
+    })
+  }
+
+  const getBetTypeLabel = (betType: string) => {
+    switch (betType) {
+      case 'moneyline': return 'Moneyline'
+      case 'spread': return 'Spread'
+      case 'total': return 'Over/Under'
+      default: return betType
+    }
+  }
 
   return (
     <div className="card">
@@ -83,6 +125,37 @@ export default function AiInsightsPanel() {
 
       {state.aiEnabled && state.selectedMatchup && state.aiPrediction && !state.aiLoading && (
         <div className="space-y-4">
+          {state.aiPrediction.recommendedBet && (
+            <button
+              onClick={handleApplyBestBet}
+              className="w-full p-4 bg-gradient-to-r from-accent-green/20 to-accent-green/10 border border-accent-green/40 rounded-lg hover:border-accent-green transition-colors text-left group"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-accent-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-accent-green font-semibold text-sm uppercase tracking-wide">Best Bet</span>
+                </div>
+                <span className="text-xs text-text-muted bg-dark-card px-2 py-1 rounded">
+                  {getBetTypeLabel(state.aiPrediction.recommendedBet.betType)}
+                </span>
+              </div>
+              <p className="text-white font-bold text-lg mb-1">
+                {state.aiPrediction.recommendedBet.selection}
+              </p>
+              <p className="text-text-secondary text-sm">
+                {state.aiPrediction.recommendedBet.reasoning}
+              </p>
+              <div className="flex items-center gap-1 mt-3 text-accent-green text-sm group-hover:gap-2 transition-all">
+                <span>Apply this pick</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          )}
+
           <div className="flex items-center justify-between p-3 bg-dark-hover rounded-lg">
             <div>
               <p className="text-text-muted text-xs">Predicted Winner</p>

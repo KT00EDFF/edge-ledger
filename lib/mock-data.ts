@@ -1,27 +1,64 @@
 import { PredictionResult, OddsData, MatchupInput } from '@/types'
 
-/**
- * Mock data for development and when API keys are not configured
- */
-
 export function generateMockPrediction(matchup: MatchupInput): PredictionResult {
-  // Randomize confidence for more realistic mock data
-  const confidence = Math.floor(Math.random() * 30) + 65 // 65-95%
-
-  const predictions = ['Home Win', 'Away Win', 'Draw']
-  const randomPrediction = predictions[Math.floor(Math.random() * predictions.length)]
+  const confidence = Math.floor(Math.random() * 30) + 65
+  
+  const isHomeWin = Math.random() > 0.45
+  const predictedWinner = isHomeWin ? matchup.homeTeam : matchup.awayTeam
+  
+  const homeScore = Math.floor(Math.random() * 20) + 17
+  const awayScore = isHomeWin 
+    ? Math.floor(Math.random() * 15) + 10 
+    : Math.floor(Math.random() * 20) + 20
+  
+  const totalPoints = homeScore + awayScore
+  const spread = homeScore - awayScore
+  
+  const betTypes: Array<'moneyline' | 'spread' | 'total'> = ['moneyline', 'spread', 'total']
+  const randomBetType = betTypes[Math.floor(Math.random() * betTypes.length)]
+  
+  let recommendedBet: PredictionResult['recommendedBet']
+  
+  if (randomBetType === 'moneyline') {
+    recommendedBet = {
+      betType: 'moneyline',
+      selection: predictedWinner,
+      reasoning: `Strong value on the moneyline with ${predictedWinner} showing dominant recent form`
+    }
+  } else if (randomBetType === 'spread') {
+    const spreadLine = Math.round(spread * 2) / 2
+    recommendedBet = {
+      betType: 'spread',
+      selection: isHomeWin ? `${matchup.homeTeam} ${spreadLine > 0 ? '+' : ''}${-spreadLine}` : `${matchup.awayTeam} ${spreadLine > 0 ? '-' : '+'}${Math.abs(spreadLine)}`,
+      line: isHomeWin ? -spreadLine : spreadLine,
+      reasoning: `The spread offers better value than the moneyline given the expected margin of victory`
+    }
+  } else {
+    const line = Math.round((totalPoints + (Math.random() * 6 - 3)) * 2) / 2
+    const isOver = totalPoints > line
+    recommendedBet = {
+      betType: 'total',
+      selection: isOver ? `Over ${line}` : `Under ${line}`,
+      line: line,
+      reasoning: `${isOver ? 'Both offenses' : 'Both defenses'} are performing ${isOver ? 'above' : 'below'} average, making the ${isOver ? 'over' : 'under'} the best play`
+    }
+  }
 
   return {
-    prediction: randomPrediction,
+    predictedWinner,
     confidence,
-    reasoning: `🤖 MOCK PREDICTION: This is simulated AI analysis. Configure OPENAI_API_KEY in .env.local for real predictions.\n\nBased on recent performance trends and historical matchup data between ${matchup.homeTeam} and ${matchup.awayTeam}, the model suggests ${randomPrediction.toLowerCase()}. The home team has shown strong form in recent games, while the away team faces challenges with their current roster configuration.`,
+    predictedScore: {
+      home: homeScore,
+      away: awayScore
+    },
+    analysis: `Based on recent performance trends and historical matchup data between ${matchup.homeTeam} and ${matchup.awayTeam}, the model projects ${predictedWinner} to win. The home team has shown strong form in recent games.`,
     keyFactors: [
       `${matchup.homeTeam} has won 3 of their last 5 home games`,
       `${matchup.awayTeam} struggling with injuries to key players`,
       'Weather conditions favor the home team\'s playing style',
       'Historical head-to-head record leans toward home advantage',
     ],
-    concerns: 'Mock data - actual game factors not analyzed. Real AI predictions require OpenAI API key configuration.',
+    recommendedBet
   }
 }
 
@@ -38,9 +75,8 @@ export function generateMockOdds(
   ]
 
   sportsbooks.forEach((book) => {
-    // Moneyline odds (randomized)
-    const homeOdds = -Math.floor(Math.random() * 200) - 100 // -100 to -300
-    const awayOdds = Math.floor(Math.random() * 200) + 100 // +100 to +300
+    const homeOdds = -Math.floor(Math.random() * 200) - 100
+    const awayOdds = Math.floor(Math.random() * 200) + 100
 
     mockOdds.push({
       sportsbook: book.name,
@@ -58,8 +94,7 @@ export function generateMockOdds(
       oddsDecimal: americanToDecimal(awayOdds),
     })
 
-    // Spread odds
-    const spread = (Math.random() * 10 - 5).toFixed(1) // -5 to +5
+    const spread = (Math.random() * 10 - 5).toFixed(1)
     mockOdds.push({
       sportsbook: book.name,
       sportsbookId: book.key,
@@ -69,8 +104,7 @@ export function generateMockOdds(
       line: parseFloat(spread),
     })
 
-    // Total (Over/Under)
-    const total = (Math.random() * 20 + 40).toFixed(1) // 40-60
+    const total = (Math.random() * 20 + 40).toFixed(1)
     mockOdds.push(
       {
         sportsbook: book.name,

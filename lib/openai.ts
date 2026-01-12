@@ -2,24 +2,17 @@ import OpenAI from 'openai'
 import { PredictionResult, MatchupInput } from '@/types'
 import { generateMockPrediction } from './mock-data'
 
-// Only initialize OpenAI client if API key is present
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
   : null
 
-/**
- * Generate AI prediction for a sports matchup
- * Falls back to mock data if OPENAI_API_KEY is not configured
- */
 export async function generatePrediction(
   matchup: MatchupInput
 ): Promise<PredictionResult> {
-  // Use mock data if OpenAI API key is not configured
   if (!openai || !process.env.OPENAI_API_KEY) {
-    console.log('📊 Using mock prediction data (OPENAI_API_KEY not configured)')
-    // Simulate API delay for realistic UX
+    console.log('Using mock prediction data (OPENAI_API_KEY not configured)')
     await new Promise((resolve) => setTimeout(resolve, 1000))
     return generateMockPrediction(matchup)
   }
@@ -33,7 +26,7 @@ export async function generatePrediction(
         {
           role: 'system',
           content:
-            'You are an expert sports analyst with deep knowledge of statistics, team dynamics, and betting strategies. Provide detailed, data-driven predictions.',
+            'You are an expert sports analyst with deep knowledge of statistics, team dynamics, and betting strategies. Provide detailed, data-driven predictions with actionable betting recommendations.',
         },
         {
           role: 'user',
@@ -49,71 +42,79 @@ export async function generatePrediction(
       throw new Error('No response from OpenAI')
     }
 
-    const prediction: PredictionResult = JSON.parse(responseText)
-
-    // Validate the response
-    if (
-      !prediction.prediction ||
-      typeof prediction.confidence !== 'number' ||
-      !prediction.reasoning
-    ) {
-      throw new Error('Invalid prediction response format')
+    const rawPrediction = JSON.parse(responseText)
+    
+    const prediction: PredictionResult = {
+      predictedWinner: rawPrediction.predictedWinner || rawPrediction.prediction || matchup.homeTeam,
+      confidence: Math.max(0, Math.min(100, rawPrediction.confidence || 50)),
+      predictedScore: rawPrediction.predictedScore,
+      analysis: rawPrediction.analysis || rawPrediction.reasoning || '',
+      keyFactors: rawPrediction.keyFactors || [],
+      recommendedBet: {
+        betType: validateBetType(rawPrediction.recommendedBet?.betType),
+        selection: rawPrediction.recommendedBet?.selection || rawPrediction.predictedWinner || matchup.homeTeam,
+        line: rawPrediction.recommendedBet?.line,
+        reasoning: rawPrediction.recommendedBet?.reasoning || 'Best value based on current analysis'
+      }
     }
-
-    // Ensure confidence is between 0 and 100
-    prediction.confidence = Math.max(0, Math.min(100, prediction.confidence))
 
     return prediction
   } catch (error) {
     console.error('Error generating prediction:', error)
-    // Fall back to mock data on error
-    console.log('⚠️  OpenAI API error, falling back to mock data')
+    console.log('OpenAI API error, falling back to mock data')
     return generateMockPrediction(matchup)
   }
 }
 
-/**
- * Build the prediction prompt for OpenAI
- */
+function validateBetType(betType: string | undefined): 'moneyline' | 'spread' | 'total' {
+  const validTypes = ['moneyline', 'spread', 'total']
+  if (betType && validTypes.includes(betType.toLowerCase())) {
+    return betType.toLowerCase() as 'moneyline' | 'spread' | 'total'
+  }
+  return 'moneyline'
+}
+
 function buildPredictionPrompt(matchup: MatchupInput): string {
   const { sport, homeTeam, awayTeam, gameDate } = matchup
 
-  return `You are an expert sports analyst. Analyze the following matchup and provide a detailed prediction.
+  return `Analyze this ${sport} matchup and provide a prediction with a specific betting recommendation.
 
-Sport: ${sport}
 Home Team: ${homeTeam}
 Away Team: ${awayTeam}
 Date: ${gameDate}
 
-Please provide:
-1. Your prediction (Home Win/Away Win/Draw or Over/Under for totals)
-2. Confidence level (0-100%)
-3. Detailed reasoning for your prediction
-4. Key factors influencing your prediction (3-5 bullet points)
-5. Any concerns or uncertainties
-
-Consider:
-- Recent team performance and form
-- Head-to-head history
-- Home/away splits and advantage
-- Injuries and lineup changes
-- Motivation factors (playoff implications, rivalry, etc.)
-- Weather conditions (if outdoor sport)
-- Rest days and schedule factors
-- Coaching matchups and strategies
-
-Format your response as JSON with the following structure:
+Provide your analysis in the following JSON format:
 {
-  "prediction": "Home Win" | "Away Win" | "Draw" | "Over" | "Under",
+  "predictedWinner": "Team name that you predict will win",
   "confidence": 75,
-  "reasoning": "Detailed explanation of your prediction...",
+  "predictedScore": {
+    "home": 24,
+    "away": 17
+  },
+  "analysis": "Detailed explanation of your prediction covering key matchup factors, recent form, and strategic considerations",
   "keyFactors": [
-    "Factor 1 description",
-    "Factor 2 description",
-    "Factor 3 description"
+    "Key factor 1",
+    "Key factor 2", 
+    "Key factor 3"
   ],
-  "concerns": "Any uncertainties or concerns about this prediction..."
+  "recommendedBet": {
+    "betType": "moneyline" | "spread" | "total",
+    "selection": "The specific bet (e.g., 'Chiefs -3.5', 'Over 47.5', 'Patriots ML')",
+    "line": 3.5,
+    "reasoning": "Why this specific bet offers the best value"
+  }
 }
 
-Be honest about your confidence level. Don't inflate it if there's significant uncertainty.`
+For recommendedBet:
+- betType must be one of: "moneyline", "spread", or "total"
+- selection should be the specific bet description users can look for
+- line is optional, include if spread or total
+- reasoning should explain why this bet type offers better value than alternatives
+
+Consider which bet type offers the best value:
+- Moneyline: Best when you're very confident in the winner
+- Spread: Best when margin of victory is predictable
+- Total: Best when the pace/scoring of the game is more predictable than the winner
+
+Be honest about confidence levels. Recommend the bet type where your edge is strongest.`
 }

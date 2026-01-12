@@ -1,9 +1,20 @@
-export interface PredictionResult {
-  prediction: string
-  confidence: number
+export interface RecommendedBet {
+  betType: 'moneyline' | 'spread' | 'total'
+  selection: string
+  line?: number
   reasoning: string
+}
+
+export interface PredictionResult {
+  predictedWinner: string
+  confidence: number
+  predictedScore?: {
+    home: number
+    away: number
+  }
+  analysis: string
   keyFactors: string[]
-  concerns: string
+  recommendedBet?: RecommendedBet
 }
 
 export interface OddsData {
