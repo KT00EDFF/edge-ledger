@@ -187,32 +187,38 @@ export function parseEspnScoreboard(data: any, sportKey: string): NormalizedMatc
   const sport = getSportConfig(sportKey)
   if (!sport || !data.events) return []
 
-  return data.events.map((event: any) => {
-    const competition = event.competitions?.[0]
-    const homeCompetitor = competition?.competitors?.find((c: any) => c.homeAway === 'home')
-    const awayCompetitor = competition?.competitors?.find((c: any) => c.homeAway === 'away')
+  return data.events
+    .filter((event: any) => {
+      const statusName = event.status?.type?.name || ''
+      return statusName !== 'STATUS_FINAL' && statusName !== 'STATUS_POSTPONED' && statusName !== 'STATUS_CANCELED'
+    })
+    .map((event: any) => {
+      const competition = event.competitions?.[0]
+      const homeCompetitor = competition?.competitors?.find((c: any) => c.homeAway === 'home')
+      const awayCompetitor = competition?.competitors?.find((c: any) => c.homeAway === 'away')
 
-    return {
-      id: event.id,
-      eventId: event.id,
-      sportKey: sport.key,
-      sportName: sport.name,
-      sportIcon: sport.icon,
-      homeTeam: {
-        name: homeCompetitor?.team?.displayName || homeCompetitor?.team?.name || 'TBD',
-        shortName: homeCompetitor?.team?.abbreviation || 'TBD',
-        logo: homeCompetitor?.team?.logo || ''
-      },
-      awayTeam: {
-        name: awayCompetitor?.team?.displayName || awayCompetitor?.team?.name || 'TBD',
-        shortName: awayCompetitor?.team?.abbreviation || 'TBD',
-        logo: awayCompetitor?.team?.logo || ''
-      },
-      startTime: event.date,
-      status: event.status?.type?.name || 'scheduled',
-      venue: competition?.venue?.fullName
-    }
-  }).sort((a: NormalizedMatchup, b: NormalizedMatchup) => 
-    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  )
+      return {
+        id: event.id,
+        eventId: event.id,
+        sportKey: sport.key,
+        sportName: sport.name,
+        sportIcon: sport.icon,
+        homeTeam: {
+          name: homeCompetitor?.team?.displayName || homeCompetitor?.team?.name || 'TBD',
+          shortName: homeCompetitor?.team?.abbreviation || 'TBD',
+          logo: homeCompetitor?.team?.logo || ''
+        },
+        awayTeam: {
+          name: awayCompetitor?.team?.displayName || awayCompetitor?.team?.name || 'TBD',
+          shortName: awayCompetitor?.team?.abbreviation || 'TBD',
+          logo: awayCompetitor?.team?.logo || ''
+        },
+        startTime: event.date,
+        status: event.status?.type?.name || 'scheduled',
+        venue: competition?.venue?.fullName
+      }
+    })
+    .sort((a: NormalizedMatchup, b: NormalizedMatchup) => 
+      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    )
 }
