@@ -14,6 +14,8 @@ The platform features a modern dark theme UI inspired by OKX.com's trading dashb
 - **Horizontal Matchup Scroller**: Browse today's games with team logos, times, and sport tags
 - **Odds Table Panel**: View spread, moneyline, and totals from multiple sportsbooks
 - **AI Analysis Toggle**: Optional GPT-4 predictions with confidence levels and key factors
+- **AI Best Bet Recommendations**: AI now recommends specific bet type (ML/Spread/Total) with selection and reasoning
+- **Completed Games Filter**: ESPN data now excludes finished, postponed, and canceled games
 - **Bet Confirmation Modal**: Clean modal for entering bet amount and confirming placement
 - **Dark Theme**: OKX-inspired dark UI with #0b0b0b background, #141414 cards, green (#00d26a) accents
 
