@@ -21,6 +21,7 @@ The platform features a modern dark theme UI inspired by OKX.com's trading dashb
 - **Mobile-Responsive Design**: Hamburger menu on mobile, responsive cards, tables, and touch-friendly UI
 - **Simplified Bankroll Settings**: Only starting bankroll exposed; current balance shown inline; "Add Funds" popup when bankroll hits $0
 - **Sportsbook Selection**: 19 US sportsbooks from The Odds API; selected books filter odds on New Bet page
+- **Kelly Criterion Bet Sizing**: When enabled in settings, bet confirmation modal shows recommended bet size based on Kelly Criterion or confidence level
 
 ## User Preferences
 

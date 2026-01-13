@@ -1,8 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useNewBet } from '@/lib/new-bet-context'
+import { calculateBetSize } from '@/lib/bet-sizing'
+
+interface Settings {
+  startingBankroll: number
+  currentBankroll: number
+  minBetSize: number
+  maxBetSize: number
+  useKellyCriterion: boolean
+}
+
+function loadSettings(): Settings {
+  if (typeof window === 'undefined') {
+    return {
+      startingBankroll: 1000,
+      currentBankroll: 1000,
+      minBetSize: 10,
+      maxBetSize: 500,
+      useKellyCriterion: false,
+    }
+  }
+  
+  const saved = localStorage.getItem('edgeLedgerSettings')
+  if (saved) {
+    return JSON.parse(saved)
+  }
+  return {
+    startingBankroll: 1000,
+    currentBankroll: 1000,
+    minBetSize: 10,
+    maxBetSize: 500,
+    useKellyCriterion: false,
+  }
+}
 
 export default function BetConfirmationModal() {
   const router = useRouter()
@@ -10,6 +43,32 @@ export default function BetConfirmationModal() {
   const [betAmount, setBetAmount] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [settings, setSettings] = useState<Settings | null>(null)
+  const [recommendedBet, setRecommendedBet] = useState<{
+    betSize: number
+    percentage: number
+    method: 'kelly' | 'confidence'
+  } | null>(null)
+
+  useEffect(() => {
+    const loaded = loadSettings()
+    setSettings(loaded)
+    
+    if (state.betSelection && loaded && loaded.currentBankroll > 0) {
+      const confidence = state.aiPrediction?.confidence || 60
+      const recommendation = calculateBetSize(
+        loaded.currentBankroll,
+        confidence,
+        loaded.minBetSize,
+        loaded.maxBetSize,
+        loaded.useKellyCriterion,
+        state.betSelection.odds
+      )
+      if (recommendation.betSize > 0 && !isNaN(recommendation.betSize)) {
+        setRecommendedBet(recommendation)
+      }
+    }
+  }, [state.betSelection, state.aiPrediction])
 
   if (!state.showConfirmModal || !state.betSelection || !state.selectedMatchup) {
     return null
@@ -23,6 +82,12 @@ export default function BetConfirmationModal() {
       return amount + (amount * odds / 100)
     } else {
       return amount + (amount * 100 / Math.abs(odds))
+    }
+  }
+
+  const handleUseRecommended = () => {
+    if (recommendedBet) {
+      setBetAmount(recommendedBet.betSize.toFixed(2))
     }
   }
 
@@ -117,6 +182,28 @@ export default function BetConfirmationModal() {
             </div>
           </div>
 
+          {recommendedBet && settings && (
+            <div className="p-4 bg-accent-blue/10 border border-accent-blue/30 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-text-secondary text-sm block">Recommended Bet</span>
+                  <span className="text-xs text-text-muted">
+                    {settings.useKellyCriterion ? 'Kelly Criterion' : 'Confidence-based'} ({recommendedBet.percentage.toFixed(1)}% of bankroll)
+                  </span>
+                </div>
+                <span className="text-accent-blue font-bold text-lg">
+                  ${recommendedBet.betSize.toFixed(2)}
+                </span>
+              </div>
+              <button
+                onClick={handleUseRecommended}
+                className="w-full mt-2 py-2 px-4 bg-accent-blue/20 hover:bg-accent-blue/30 border border-accent-blue/50 rounded-lg text-accent-blue text-sm font-medium transition-colors"
+              >
+                Use Recommended Amount
+              </button>
+            </div>
+          )}
+
           <div>
             <label className="label-dark">Bet Amount</label>
             <div className="relative">
@@ -131,6 +218,11 @@ export default function BetConfirmationModal() {
                 step="0.01"
               />
             </div>
+            {settings && (
+              <p className="text-xs text-text-muted mt-1">
+                Current bankroll: ${settings.currentBankroll.toFixed(2)}
+              </p>
+            )}
           </div>
 
           {betAmount && parseFloat(betAmount) > 0 && (
