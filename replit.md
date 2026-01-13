@@ -19,6 +19,7 @@ The platform features a modern dark theme UI inspired by OKX.com's trading dashb
 - **Bet Confirmation Modal**: Clean modal for entering bet amount and confirming placement
 - **Dark Theme**: OKX-inspired dark UI with #0b0b0b background, #141414 cards, green (#00d26a) accents
 - **Mobile-Responsive Design**: Hamburger menu on mobile, responsive cards, tables, and touch-friendly UI
+- **Simplified Bankroll Settings**: Only starting bankroll exposed; current balance shown inline; "Add Funds" popup when bankroll hits $0
 
 ## User Preferences
 

@@ -1,14 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-
-const INITIAL_SETTINGS = {
-  startingBankroll: 1000,
-  currentBankroll: 1000,
-  minBetSize: 10,
-  maxBetSize: 500,
-  useKellyCriterion: false,
-}
+import { useState, useEffect } from 'react'
 
 const AVAILABLE_SPORTSBOOKS = [
   { id: 'draftkings', name: 'DraftKings', logo: 'DK' },
@@ -18,11 +10,62 @@ const AVAILABLE_SPORTSBOOKS = [
   { id: 'pointsbet', name: 'PointsBet', logo: 'PB' },
 ]
 
+interface Settings {
+  startingBankroll: number
+  currentBankroll: number
+  minBetSize: number
+  maxBetSize: number
+  useKellyCriterion: boolean
+}
+
+function loadSettings(): Settings {
+  if (typeof window === 'undefined') {
+    return {
+      startingBankroll: 1000,
+      currentBankroll: 1000,
+      minBetSize: 10,
+      maxBetSize: 500,
+      useKellyCriterion: false,
+    }
+  }
+  
+  const saved = localStorage.getItem('edgeLedgerSettings')
+  if (saved) {
+    return JSON.parse(saved)
+  }
+  return {
+    startingBankroll: 1000,
+    currentBankroll: 1000,
+    minBetSize: 10,
+    maxBetSize: 500,
+    useKellyCriterion: false,
+  }
+}
+
 export default function SettingsPage() {
-  const [settings, setSettings] = useState(INITIAL_SETTINGS)
+  const [settings, setSettings] = useState<Settings>({
+    startingBankroll: 1000,
+    currentBankroll: 1000,
+    minBetSize: 10,
+    maxBetSize: 500,
+    useKellyCriterion: false,
+  })
   const [selectedBooks, setSelectedBooks] = useState(['draftkings', 'fanduel', 'betmgm'])
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [showAddFundsModal, setShowAddFundsModal] = useState(false)
+  const [addFundsAmount, setAddFundsAmount] = useState('')
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  useEffect(() => {
+    const loaded = loadSettings()
+    setSettings(loaded)
+    setIsLoaded(true)
+    
+    if (loaded.currentBankroll <= 0) {
+      setShowAddFundsModal(true)
+    }
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : parseFloat(e.target.value)
@@ -45,7 +88,17 @@ export default function SettingsPage() {
     setSaveMessage('')
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const existingSettings = localStorage.getItem('edgeLedgerSettings')
+      let updatedSettings = { ...settings }
+      
+      if (!existingSettings) {
+        updatedSettings.currentBankroll = settings.startingBankroll
+      }
+      
+      localStorage.setItem('edgeLedgerSettings', JSON.stringify(updatedSettings))
+      localStorage.setItem('edgeLedgerSportsbooks', JSON.stringify(selectedBooks))
+      
+      setSettings(updatedSettings)
       setSaveMessage('Settings saved successfully!')
       setTimeout(() => setSaveMessage(''), 3000)
     } catch (error) {
@@ -53,6 +106,35 @@ export default function SettingsPage() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleAddFunds = () => {
+    const amount = parseFloat(addFundsAmount)
+    if (amount > 0) {
+      const newSettings = {
+        ...settings,
+        startingBankroll: amount,
+        currentBankroll: amount,
+      }
+      setSettings(newSettings)
+      localStorage.setItem('edgeLedgerSettings', JSON.stringify(newSettings))
+      setShowAddFundsModal(false)
+      setAddFundsAmount('')
+      setSaveMessage('Funds added successfully!')
+      setTimeout(() => setSaveMessage(''), 3000)
+    }
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-dark-card rounded w-32 mb-4"></div>
+          <div className="h-4 bg-dark-card rounded w-64 mb-8"></div>
+          <div className="card h-64"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -83,24 +165,13 @@ export default function SettingsPage() {
                   min="0"
                 />
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="currentBankroll" className="label-dark">
-                Current Bankroll
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">$</span>
-                <input
-                  type="number"
-                  id="currentBankroll"
-                  name="currentBankroll"
-                  value={settings.currentBankroll}
-                  readOnly
-                  className="input-dark pl-8 bg-dark-hover cursor-not-allowed"
-                />
-              </div>
-              <p className="text-sm text-text-muted mt-2">Updated automatically based on bet results</p>
+              <p className="text-sm text-text-muted mt-2">
+                This is your initial bankroll amount. Your current balance of{' '}
+                <span className={`font-semibold ${settings.currentBankroll > 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+                  ${settings.currentBankroll.toFixed(2)}
+                </span>{' '}
+                updates automatically based on bet results.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -261,6 +332,71 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {showAddFundsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowAddFundsModal(false)} />
+          
+          <div className="relative bg-dark-card border border-dark-border rounded-xl w-full max-w-md p-4 sm:p-6 mx-2 sm:mx-0">
+            <button
+              onClick={() => setShowAddFundsModal(false)}
+              className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 bg-accent-red/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-accent-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-white mb-2">Bankroll Empty</h2>
+              <p className="text-text-secondary text-sm">
+                Your current bankroll has hit $0. Add funds to continue placing bets.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="label-dark">Add Funds</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">$</span>
+                <input
+                  type="number"
+                  value={addFundsAmount}
+                  onChange={(e) => setAddFundsAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="input-dark pl-8"
+                  min="1"
+                  step="10"
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-text-muted mt-2">
+                This will set both your starting and current bankroll to this amount.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAddFundsModal(false)}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddFunds}
+                disabled={!addFundsAmount || parseFloat(addFundsAmount) <= 0}
+                className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Funds
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
