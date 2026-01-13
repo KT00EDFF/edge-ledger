@@ -99,7 +99,7 @@ export default function MatchupScroller() {
     <div className="relative">
       <button
         onClick={() => scroll('left')}
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-dark-bg/90 border border-dark-border rounded-full flex items-center justify-center text-white hover:bg-dark-hover transition-colors"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 bg-dark-bg/90 border border-dark-border rounded-full hidden sm:flex items-center justify-center text-white hover:bg-dark-hover transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -108,14 +108,14 @@ export default function MatchupScroller() {
 
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide px-6 py-1"
+        className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide px-1 sm:px-6 py-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {state.matchups.map((matchup: NormalizedMatchup) => (
           <button
             key={matchup.id}
             onClick={() => selectMatchup(matchup)}
-            className={`flex-shrink-0 w-52 p-4 rounded-xl border transition-all ${
+            className={`flex-shrink-0 w-40 sm:w-52 p-3 sm:p-4 rounded-xl border transition-all ${
               state.selectedMatchup?.id === matchup.id
                 ? 'bg-accent-blue/10 border-accent-blue'
                 : 'bg-dark-card border-dark-border hover:border-accent-blue/50'
@@ -171,7 +171,7 @@ export default function MatchupScroller() {
 
       <button
         onClick={() => scroll('right')}
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-dark-bg/90 border border-dark-border rounded-full flex items-center justify-center text-white hover:bg-dark-hover transition-colors"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 bg-dark-bg/90 border border-dark-border rounded-full hidden sm:flex items-center justify-center text-white hover:bg-dark-hover transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

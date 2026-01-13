@@ -76,7 +76,7 @@ export default function BetConfirmationModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70" onClick={closeConfirmModal} />
       
-      <div className="relative bg-dark-card border border-dark-border rounded-xl w-full max-w-md p-6">
+      <div className="relative bg-dark-card border border-dark-border rounded-xl w-full max-w-md p-4 sm:p-6 mx-2 sm:mx-0">
         <button
           onClick={closeConfirmModal}
           className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors"
@@ -86,7 +86,7 @@ export default function BetConfirmationModal() {
           </svg>
         </button>
 
-        <h2 className="text-xl font-bold text-white mb-6">Confirm Bet</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Confirm Bet</h2>
 
         <div className="space-y-4 mb-6">
           <div className="p-4 bg-dark-hover rounded-lg">

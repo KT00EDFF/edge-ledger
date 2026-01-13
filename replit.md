@@ -18,6 +18,7 @@ The platform features a modern dark theme UI inspired by OKX.com's trading dashb
 - **Completed Games Filter**: ESPN data now excludes finished, postponed, and canceled games
 - **Bet Confirmation Modal**: Clean modal for entering bet amount and confirming placement
 - **Dark Theme**: OKX-inspired dark UI with #0b0b0b background, #141414 cards, green (#00d26a) accents
+- **Mobile-Responsive Design**: Hamburger menu on mobile, responsive cards, tables, and touch-friendly UI
 
 ## User Preferences
 

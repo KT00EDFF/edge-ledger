@@ -107,19 +107,19 @@ export default function OddsTablePanel() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-dark-border">
-                <th className="text-left py-3 px-2 text-text-secondary text-sm font-medium">Sportsbook</th>
-                <th className="text-center py-3 px-2 text-text-secondary text-sm font-medium">Spread</th>
-                <th className="text-center py-3 px-2 text-text-secondary text-sm font-medium">Moneyline</th>
-                <th className="text-center py-3 px-2 text-text-secondary text-sm font-medium">Total</th>
+                <th className="text-left py-2 sm:py-3 px-1 sm:px-2 text-text-secondary text-xs sm:text-sm font-medium">Book</th>
+                <th className="text-center py-2 sm:py-3 px-1 sm:px-2 text-text-secondary text-xs sm:text-sm font-medium">Spread</th>
+                <th className="text-center py-2 sm:py-3 px-1 sm:px-2 text-text-secondary text-xs sm:text-sm font-medium">ML</th>
+                <th className="text-center py-2 sm:py-3 px-1 sm:px-2 text-text-secondary text-xs sm:text-sm font-medium">Total</th>
               </tr>
             </thead>
             <tbody>
               {state.odds.map((odds: OddsData) => (
                 <tr key={odds.bookmaker} className="border-b border-dark-border/50 hover:bg-dark-hover/50">
-                  <td className="py-3 px-2">
-                    <span className="font-medium text-white text-sm">{odds.bookmaker}</span>
+                  <td className="py-2 sm:py-3 px-1 sm:px-2">
+                    <span className="font-medium text-white text-xs sm:text-sm">{odds.bookmaker}</span>
                   </td>
-                  <td className="py-2 px-1">
+                  <td className="py-1 sm:py-2 px-0.5 sm:px-1">
                     {odds.spreads && (
                       <div className="flex flex-col gap-1">
                         <button
@@ -130,7 +130,7 @@ export default function OddsTablePanel() {
                             odds.spreads!.away.price,
                             odds.spreads!.away.point
                           )}
-                          className="px-2 py-1.5 bg-dark-hover border border-dark-border rounded text-xs hover:border-accent-blue transition-colors"
+                          className="px-1.5 sm:px-2 py-1 sm:py-1.5 bg-dark-hover border border-dark-border rounded text-[10px] sm:text-xs hover:border-accent-blue transition-colors"
                         >
                           <span className="text-text-secondary">{state.selectedMatchup!.awayTeam.shortName}</span>
                           <span className="ml-1 text-white">{odds.spreads.away.point > 0 ? '+' : ''}{odds.spreads.away.point}</span>
@@ -144,7 +144,7 @@ export default function OddsTablePanel() {
                             odds.spreads!.home.price,
                             odds.spreads!.home.point
                           )}
-                          className="px-2 py-1.5 bg-dark-hover border border-dark-border rounded text-xs hover:border-accent-blue transition-colors"
+                          className="px-1.5 sm:px-2 py-1 sm:py-1.5 bg-dark-hover border border-dark-border rounded text-[10px] sm:text-xs hover:border-accent-blue transition-colors"
                         >
                           <span className="text-text-secondary">{state.selectedMatchup!.homeTeam.shortName}</span>
                           <span className="ml-1 text-white">{odds.spreads.home.point > 0 ? '+' : ''}{odds.spreads.home.point}</span>
@@ -153,7 +153,7 @@ export default function OddsTablePanel() {
                       </div>
                     )}
                   </td>
-                  <td className="py-2 px-1">
+                  <td className="py-1 sm:py-2 px-0.5 sm:px-1">
                     {odds.moneyline && (
                       <div className="flex flex-col gap-1">
                         <button
@@ -163,7 +163,7 @@ export default function OddsTablePanel() {
                             state.selectedMatchup!.awayTeam.shortName,
                             odds.moneyline!.away
                           )}
-                          className="px-2 py-1.5 bg-dark-hover border border-dark-border rounded text-xs hover:border-accent-blue transition-colors"
+                          className="px-1.5 sm:px-2 py-1 sm:py-1.5 bg-dark-hover border border-dark-border rounded text-[10px] sm:text-xs hover:border-accent-blue transition-colors"
                         >
                           <span className="text-text-secondary">{state.selectedMatchup!.awayTeam.shortName}</span>
                           <span className="ml-1 text-accent-green">{formatOdds(odds.moneyline.away)}</span>
@@ -175,7 +175,7 @@ export default function OddsTablePanel() {
                             state.selectedMatchup!.homeTeam.shortName,
                             odds.moneyline!.home
                           )}
-                          className="px-2 py-1.5 bg-dark-hover border border-dark-border rounded text-xs hover:border-accent-blue transition-colors"
+                          className="px-1.5 sm:px-2 py-1 sm:py-1.5 bg-dark-hover border border-dark-border rounded text-[10px] sm:text-xs hover:border-accent-blue transition-colors"
                         >
                           <span className="text-text-secondary">{state.selectedMatchup!.homeTeam.shortName}</span>
                           <span className="ml-1 text-accent-green">{formatOdds(odds.moneyline.home)}</span>
@@ -183,7 +183,7 @@ export default function OddsTablePanel() {
                       </div>
                     )}
                   </td>
-                  <td className="py-2 px-1">
+                  <td className="py-1 sm:py-2 px-0.5 sm:px-1">
                     {odds.totals && (
                       <div className="flex flex-col gap-1">
                         <button
@@ -194,7 +194,7 @@ export default function OddsTablePanel() {
                             odds.totals!.over.price,
                             odds.totals!.over.point
                           )}
-                          className="px-2 py-1.5 bg-dark-hover border border-dark-border rounded text-xs hover:border-accent-blue transition-colors"
+                          className="px-1.5 sm:px-2 py-1 sm:py-1.5 bg-dark-hover border border-dark-border rounded text-[10px] sm:text-xs hover:border-accent-blue transition-colors"
                         >
                           <span className="text-text-secondary">O</span>
                           <span className="ml-1 text-white">{odds.totals.over.point}</span>
@@ -208,7 +208,7 @@ export default function OddsTablePanel() {
                             odds.totals!.under.price,
                             odds.totals!.under.point
                           )}
-                          className="px-2 py-1.5 bg-dark-hover border border-dark-border rounded text-xs hover:border-accent-blue transition-colors"
+                          className="px-1.5 sm:px-2 py-1 sm:py-1.5 bg-dark-hover border border-dark-border rounded text-[10px] sm:text-xs hover:border-accent-blue transition-colors"
                         >
                           <span className="text-text-secondary">U</span>
                           <span className="ml-1 text-white">{odds.totals.under.point}</span>

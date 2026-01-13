@@ -37,23 +37,23 @@ body {
 
 @layer components {
   .card {
-    @apply bg-dark-card border border-dark-border rounded-xl p-5;
+    @apply bg-dark-card border border-dark-border rounded-xl p-3 sm:p-5;
   }
   
   .card-hover {
-    @apply bg-dark-card border border-dark-border rounded-xl p-5 hover:border-accent-blue/50 transition-all duration-200;
+    @apply bg-dark-card border border-dark-border rounded-xl p-3 sm:p-5 hover:border-accent-blue/50 transition-all duration-200;
   }
   
   .btn-primary {
-    @apply px-4 py-2.5 bg-accent-green text-dark-bg font-semibold rounded-lg hover:bg-accent-green/90 transition-colors;
+    @apply px-3 sm:px-4 py-2 sm:py-2.5 bg-accent-green text-dark-bg font-semibold rounded-lg hover:bg-accent-green/90 transition-colors text-sm sm:text-base;
   }
   
   .btn-secondary {
-    @apply px-4 py-2.5 bg-dark-hover border border-dark-border text-white font-medium rounded-lg hover:bg-dark-border transition-colors;
+    @apply px-3 sm:px-4 py-2 sm:py-2.5 bg-dark-hover border border-dark-border text-white font-medium rounded-lg hover:bg-dark-border transition-colors text-sm sm:text-base;
   }
   
   .input-dark {
-    @apply w-full px-4 py-3 bg-dark-hover border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-accent-blue transition-colors;
+    @apply w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-dark-hover border border-dark-border rounded-lg text-white placeholder-text-muted focus:outline-none focus:border-accent-blue transition-colors text-sm sm:text-base;
   }
   
   .label-dark {
@@ -101,11 +101,20 @@ body {
   }
   
   .page-title {
-    @apply text-3xl font-bold text-white mb-2;
+    @apply text-2xl sm:text-3xl font-bold text-white mb-2;
   }
   
   .page-subtitle {
-    @apply text-text-secondary;
+    @apply text-text-secondary text-sm sm:text-base;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 
