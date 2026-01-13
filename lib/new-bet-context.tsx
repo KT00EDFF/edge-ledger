@@ -39,6 +39,7 @@ interface NewBetState {
   aiEnabled: boolean
   aiPrediction: any | null
   aiLoading: boolean
+  aiError: string | null
   betSelection: BetSelection | null
   showConfirmModal: boolean
 }
@@ -55,6 +56,7 @@ type NewBetAction =
   | { type: 'TOGGLE_AI'; enabled: boolean }
   | { type: 'SET_AI_PREDICTION'; prediction: any }
   | { type: 'SET_AI_LOADING'; loading: boolean }
+  | { type: 'SET_AI_ERROR'; error: string | null }
   | { type: 'SET_BET_SELECTION'; selection: BetSelection | null }
   | { type: 'SHOW_CONFIRM_MODAL'; show: boolean }
   | { type: 'RESET' }
@@ -71,6 +73,7 @@ const initialState: NewBetState = {
   aiEnabled: false,
   aiPrediction: null,
   aiLoading: false,
+  aiError: null,
   betSelection: null,
   showConfirmModal: false
 }
@@ -108,11 +111,13 @@ function newBetReducer(state: NewBetState, action: NewBetAction): NewBetState {
     case 'SET_ODDS_ERROR':
       return { ...state, oddsError: action.error }
     case 'TOGGLE_AI':
-      return { ...state, aiEnabled: action.enabled, aiPrediction: null }
+      return { ...state, aiEnabled: action.enabled, aiPrediction: null, aiError: null }
     case 'SET_AI_PREDICTION':
       return { ...state, aiPrediction: action.prediction }
     case 'SET_AI_LOADING':
       return { ...state, aiLoading: action.loading }
+    case 'SET_AI_ERROR':
+      return { ...state, aiError: action.error }
     case 'SET_BET_SELECTION':
       return { ...state, betSelection: action.selection }
     case 'SHOW_CONFIRM_MODAL':

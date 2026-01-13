@@ -5,6 +5,14 @@ export interface RecommendedBet {
   reasoning: string
 }
 
+export interface EdgeAnalysis {
+  marketLine: string
+  fairLine: string
+  edgePercent: number
+  publicSide: string
+  sharpSide: string
+}
+
 export interface PredictionResult {
   predictedWinner: string
   confidence: number
@@ -14,6 +22,7 @@ export interface PredictionResult {
   }
   analysis: string
   keyFactors: string[]
+  edgeAnalysis?: EdgeAnalysis
   recommendedBet?: RecommendedBet
 }
 

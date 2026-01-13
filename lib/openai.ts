@@ -1,12 +1,5 @@
 import OpenAI from 'openai'
 import { PredictionResult, MatchupInput } from '@/types'
-import { generateMockPrediction } from './mock-data'
-
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-  : null
 
 // Sport-specific analysis factors for sharp betting
 const SPORT_ANALYSIS_CONFIG: Record<string, {
@@ -255,58 +248,54 @@ const SHARP_SYSTEM_PROMPT = `You are an elite sports betting analyst who thinks 
 export async function generatePrediction(
   matchup: MatchupInput
 ): Promise<PredictionResult> {
-  if (!openai || !process.env.OPENAI_API_KEY) {
-    console.log('Using mock prediction data (OPENAI_API_KEY not configured)')
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    return generateMockPrediction(matchup)
+  const apiKey = process.env.OPENAI_API_KEY
+  
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is not configured. Please add your OpenAI API key in Settings > Secrets.')
   }
 
+  const openai = new OpenAI({ apiKey })
   const prompt = buildPredictionPrompt(matchup)
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages: [
-        {
-          role: 'system',
-          content: SHARP_SYSTEM_PROMPT,
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' },
-    })
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4-turbo-preview',
+    messages: [
+      {
+        role: 'system',
+        content: SHARP_SYSTEM_PROMPT,
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    response_format: { type: 'json_object' },
+  })
 
-    const responseText = completion.choices[0]?.message?.content
-    if (!responseText) {
-      throw new Error('No response from OpenAI')
-    }
-
-    const rawPrediction = JSON.parse(responseText)
-    
-    const prediction: PredictionResult = {
-      predictedWinner: rawPrediction.predictedWinner || rawPrediction.prediction || matchup.homeTeam,
-      confidence: Math.max(0, Math.min(100, rawPrediction.confidence || 50)),
-      predictedScore: rawPrediction.predictedScore,
-      analysis: rawPrediction.analysis || rawPrediction.reasoning || '',
-      keyFactors: rawPrediction.keyFactors || [],
-      recommendedBet: {
-        betType: validateBetType(rawPrediction.recommendedBet?.betType),
-        selection: rawPrediction.recommendedBet?.selection || rawPrediction.predictedWinner || matchup.homeTeam,
-        line: rawPrediction.recommendedBet?.line,
-        reasoning: rawPrediction.recommendedBet?.reasoning || 'Best value based on current analysis'
-      }
-    }
-
-    return prediction
-  } catch (error) {
-    console.error('Error generating prediction:', error)
-    console.log('OpenAI API error, falling back to mock data')
-    return generateMockPrediction(matchup)
+  const responseText = completion.choices[0]?.message?.content
+  if (!responseText) {
+    throw new Error('No response received from AI model')
   }
+
+  const rawPrediction = JSON.parse(responseText)
+  
+  const prediction: PredictionResult = {
+    predictedWinner: rawPrediction.predictedWinner || rawPrediction.prediction || matchup.homeTeam,
+    confidence: Math.max(0, Math.min(100, rawPrediction.confidence || 50)),
+    predictedScore: rawPrediction.predictedScore,
+    analysis: rawPrediction.analysis || rawPrediction.reasoning || '',
+    keyFactors: rawPrediction.keyFactors || [],
+    edgeAnalysis: rawPrediction.edgeAnalysis || null,
+    recommendedBet: {
+      betType: validateBetType(rawPrediction.recommendedBet?.betType),
+      selection: rawPrediction.recommendedBet?.selection || rawPrediction.predictedWinner || matchup.homeTeam,
+      line: rawPrediction.recommendedBet?.line,
+      reasoning: rawPrediction.recommendedBet?.reasoning || 'Best value based on current analysis'
+    }
+  }
+
+  return prediction
 }
 
 function validateBetType(betType: string | undefined): 'moneyline' | 'spread' | 'total' {
@@ -369,8 +358,15 @@ Analyze this matchup through the lens of a sharp bettor looking for VALUE, not j
   "predictedWinner": "Team you expect to win outright",
   "confidence": 72,
   "predictedScore": {
-    "home": 24,
-    "away": 21
+    "home": 110,
+    "away": 105
+  },
+  "edgeAnalysis": {
+    "marketLine": "Current estimated market line (e.g., 'PHX -3.5')",
+    "fairLine": "Your calculated fair line (e.g., 'PHX -1.5')",
+    "edgePercent": 4.5,
+    "publicSide": "Which side public is betting",
+    "sharpSide": "Which side sharp money favors"
   },
   "analysis": "Sharp analysis explaining WHERE THE VALUE IS, not just who wins. Mention if the line is mispriced and by how much. Call out any public bias you're fading. Explain situational factors affecting this game.",
   "keyFactors": [
@@ -381,11 +377,13 @@ Analyze this matchup through the lens of a sharp bettor looking for VALUE, not j
   ],
   "recommendedBet": {
     "betType": "spread" | "moneyline" | "total",
-    "selection": "Specific selection (e.g., 'Patriots +3.5', 'Under 47.5', 'Chiefs ML')",
+    "selection": "Specific selection (e.g., 'Heat +3.5', 'Under 220.5', 'Suns ML')",
     "line": -3.5,
     "reasoning": "Explain why THIS bet type offers better value than alternatives. Be specific about the edge."
   }
 }
+
+IMPORTANT: Generate realistic scores for the sport. For NBA use scores like 105-112. For NFL use 24-17. For MLB use 5-3.
 
 ---
 
