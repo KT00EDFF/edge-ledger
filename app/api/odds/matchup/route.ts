@@ -26,10 +26,34 @@ interface OddsApiResponse {
   bookmakers: OddsApiBookmaker[]
 }
 
-function generateMockOdds(homeTeam: string, awayTeam: string): OddsData[] {
-  const bookmakers = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']
+function generateMockOdds(homeTeam: string, awayTeam: string, filterBooks?: string[]): OddsData[] {
+  const allBookmakers = [
+    { key: 'draftkings', name: 'DraftKings' },
+    { key: 'fanduel', name: 'FanDuel' },
+    { key: 'betmgm', name: 'BetMGM' },
+    { key: 'williamhill_us', name: 'Caesars' },
+    { key: 'pointsbetus', name: 'PointsBet' },
+    { key: 'betrivers', name: 'BetRivers' },
+    { key: 'unibet_us', name: 'Unibet' },
+    { key: 'wynnbet', name: 'WynnBET' },
+    { key: 'superbook', name: 'SuperBook' },
+    { key: 'bovada', name: 'Bovada' },
+    { key: 'betonlineag', name: 'BetOnline' },
+    { key: 'lowvig', name: 'LowVig' },
+    { key: 'mybookieag', name: 'MyBookie' },
+    { key: 'betus', name: 'BetUS' },
+    { key: 'pinnacle', name: 'Pinnacle' },
+    { key: 'espnbet', name: 'ESPN BET' },
+    { key: 'fliff', name: 'Fliff' },
+    { key: 'hardrockbet', name: 'Hard Rock' },
+    { key: 'fanatics', name: 'Fanatics' },
+  ]
   
-  return bookmakers.map(bookmaker => {
+  const bookmakers = filterBooks && filterBooks.length > 0
+    ? allBookmakers.filter(b => filterBooks.includes(b.key))
+    : allBookmakers.slice(0, 5)
+  
+  return bookmakers.map(({ name: bookmaker }) => {
     const baseSpread = Math.random() > 0.5 ? Math.floor(Math.random() * 10) + 1 : -(Math.floor(Math.random() * 10) + 1)
     const homeML = baseSpread < 0 ? -(100 + Math.floor(Math.random() * 50)) : 100 + Math.floor(Math.random() * 150)
     const awayML = baseSpread > 0 ? -(100 + Math.floor(Math.random() * 50)) : 100 + Math.floor(Math.random() * 150)
@@ -59,6 +83,9 @@ export async function GET(request: NextRequest) {
     const sport = searchParams.get('sport')
     const homeTeam = searchParams.get('homeTeam')
     const awayTeam = searchParams.get('awayTeam')
+    const bookmakers = searchParams.get('bookmakers')
+    
+    const filterBooks = bookmakers ? bookmakers.split(',').filter(Boolean) : []
 
     if (!sport || !homeTeam || !awayTeam) {
       return NextResponse.json(
@@ -71,21 +98,25 @@ export async function GET(request: NextRequest) {
       console.log('📊 Using mock odds data (ODDS_API_KEY not configured)')
       await new Promise(resolve => setTimeout(resolve, 500))
       return NextResponse.json({
-        odds: generateMockOdds(homeTeam, awayTeam),
+        odds: generateMockOdds(homeTeam, awayTeam, filterBooks),
         source: 'mock'
       })
     }
 
+    const params: Record<string, string> = {
+      apiKey: API_KEY,
+      regions: 'us',
+      markets: 'h2h,spreads,totals',
+      oddsFormat: 'american'
+    }
+    
+    if (filterBooks.length > 0) {
+      params.bookmakers = filterBooks.join(',')
+    }
+
     const response = await axios.get<OddsApiResponse[]>(
       `${ODDS_API_BASE_URL}/sports/${sport}/odds`,
-      {
-        params: {
-          apiKey: API_KEY,
-          regions: 'us',
-          markets: 'h2h,spreads,totals',
-          oddsFormat: 'american'
-        }
-      }
+      { params }
     )
 
     const homeTeamLower = homeTeam.toLowerCase()
@@ -103,7 +134,7 @@ export async function GET(request: NextRequest) {
     if (!game) {
       console.log('⚠️ Game not found in Odds API, using mock data')
       return NextResponse.json({
-        odds: generateMockOdds(homeTeam, awayTeam),
+        odds: generateMockOdds(homeTeam, awayTeam, filterBooks),
         source: 'mock'
       })
     }

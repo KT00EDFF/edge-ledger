@@ -1,11 +1,17 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNewBet, OddsData, BetSelection } from '@/lib/new-bet-context'
 import { getSportConfig } from '@/lib/sports-mapper'
+import { getSavedSportsbooks, DEFAULT_SELECTED_BOOKS } from '@/lib/sportsbooks'
 
 export default function OddsTablePanel() {
   const { state, dispatch, selectBet } = useNewBet()
+  const [selectedBooks, setSelectedBooks] = useState<string[]>(DEFAULT_SELECTED_BOOKS)
+
+  useEffect(() => {
+    setSelectedBooks(getSavedSportsbooks())
+  }, [])
 
   useEffect(() => {
     if (!state.selectedMatchup) return
@@ -21,6 +27,10 @@ export default function OddsTablePanel() {
           homeTeam: state.selectedMatchup!.homeTeam.name,
           awayTeam: state.selectedMatchup!.awayTeam.name
         })
+        
+        if (selectedBooks.length > 0) {
+          params.set('bookmakers', selectedBooks.join(','))
+        }
 
         const response = await fetch(`/api/odds/matchup?${params}`)
         if (!response.ok) throw new Error('Failed to fetch odds')
@@ -35,7 +45,7 @@ export default function OddsTablePanel() {
     }
 
     fetchOdds()
-  }, [state.selectedMatchup, state.selectedSport, dispatch])
+  }, [state.selectedMatchup, state.selectedSport, selectedBooks, dispatch])
 
   const handleSelectBet = (
     bookmaker: string,

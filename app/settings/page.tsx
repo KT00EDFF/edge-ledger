@@ -1,14 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-const AVAILABLE_SPORTSBOOKS = [
-  { id: 'draftkings', name: 'DraftKings', logo: 'DK' },
-  { id: 'fanduel', name: 'FanDuel', logo: 'FD' },
-  { id: 'betmgm', name: 'BetMGM', logo: 'BM' },
-  { id: 'caesars', name: 'Caesars', logo: 'CS' },
-  { id: 'pointsbet', name: 'PointsBet', logo: 'PB' },
-]
+import { AVAILABLE_SPORTSBOOKS, DEFAULT_SELECTED_BOOKS } from '@/lib/sportsbooks'
 
 interface Settings {
   startingBankroll: number
@@ -50,7 +43,7 @@ export default function SettingsPage() {
     maxBetSize: 500,
     useKellyCriterion: false,
   })
-  const [selectedBooks, setSelectedBooks] = useState(['draftkings', 'fanduel', 'betmgm'])
+  const [selectedBooks, setSelectedBooks] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [showAddFundsModal, setShowAddFundsModal] = useState(false)
@@ -60,6 +53,14 @@ export default function SettingsPage() {
   useEffect(() => {
     const loaded = loadSettings()
     setSettings(loaded)
+    
+    const savedBooks = localStorage.getItem('edgeLedgerSportsbooks')
+    if (savedBooks) {
+      setSelectedBooks(JSON.parse(savedBooks))
+    } else {
+      setSelectedBooks(DEFAULT_SELECTED_BOOKS)
+    }
+    
     setIsLoaded(true)
     
     if (loaded.currentBankroll <= 0) {
@@ -242,27 +243,27 @@ export default function SettingsPage() {
           <p className="text-text-secondary mb-6">
             Select the sportsbooks where you have accounts. We'll find the best odds from these books.
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {AVAILABLE_SPORTSBOOKS.map((book) => {
               const isSelected = selectedBooks.includes(book.id)
               return (
                 <button
                   key={book.id}
                   onClick={() => toggleSportsbook(book.id)}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                  className={`p-2 sm:p-3 rounded-xl border-2 transition-all duration-200 ${
                     isSelected
                       ? 'border-accent-green bg-accent-green/10'
                       : 'border-dark-border hover:border-text-muted bg-dark-hover'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-bold text-xs sm:text-sm ${
                         isSelected ? 'bg-accent-green text-dark-bg' : 'bg-dark-border text-text-secondary'
                       }`}>
                         {book.logo}
                       </div>
-                      <span className={`font-medium ${isSelected ? 'text-white' : 'text-text-secondary'}`}>
+                      <span className={`font-medium text-xs sm:text-sm ${isSelected ? 'text-white' : 'text-text-secondary'}`}>
                         {book.name}
                       </span>
                     </div>
