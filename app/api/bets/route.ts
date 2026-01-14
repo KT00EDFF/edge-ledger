@@ -1,16 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createBankrollSnapshot } from '@/lib/analytics'
 
-// GET all bets for a user
+async function getOrCreateDefaultUser() {
+  let user = await prisma.user.findFirst({
+    where: { email: 'default@edgeledger.app' }
+  })
+  
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: 'default@edgeledger.app',
+        startingBankroll: 1000,
+        currentBankroll: 1000,
+      }
+    })
+  }
+  
+  return user
+}
+
+async function getOrCreateSportsbook(name: string) {
+  let sportsbook = await prisma.sportsbook.findFirst({
+    where: { name }
+  })
+  
+  if (!sportsbook) {
+    sportsbook = await prisma.sportsbook.create({
+      data: {
+        name,
+        apiKey: name.toLowerCase().replace(/\s+/g, '_'),
+        isActive: true
+      }
+    })
+  }
+  
+  return sportsbook
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 })
-    }
+    const userIdParam = searchParams.get('userId')
+    
+    const user = await getOrCreateDefaultUser()
+    const userId = userIdParam || user.id
 
     const bets = await prisma.bet.findMany({
       where: { userId },
@@ -30,44 +63,35 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create new bet
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
     const {
-      userId,
-      sportsbookId,
       sport,
       homeTeam,
       awayTeam,
       gameDate,
-      prediction,
-      confidence,
-      aiReasoning,
       betType,
+      selection,
       odds,
-      oddsDecimal,
       line,
-      betSize,
+      sportsbook: sportsbookName,
+      amount,
       potentialPayout,
+      confidence: providedConfidence,
+      aiReasoning: providedReasoning
     } = body
 
-    // Validate required fields
     if (
-      !userId ||
-      !sportsbookId ||
       !sport ||
       !homeTeam ||
       !awayTeam ||
       !gameDate ||
-      !prediction ||
-      typeof confidence !== 'number' ||
-      !aiReasoning ||
       !betType ||
+      !selection ||
       typeof odds !== 'number' ||
-      typeof betSize !== 'number' ||
-      typeof potentialPayout !== 'number'
+      typeof amount !== 'number'
     ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -75,24 +99,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create the bet
+    const user = await getOrCreateDefaultUser()
+    const sportsbook = await getOrCreateSportsbook(sportsbookName || 'Unknown')
+
+    if (user.currentBankroll < amount) {
+      return NextResponse.json(
+        { error: 'Insufficient bankroll' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        currentBankroll: { decrement: amount }
+      }
+    })
+
     const bet = await prisma.bet.create({
       data: {
-        userId,
-        sportsbookId,
-        sport,
+        userId: user.id,
+        sportsbookId: sportsbook.id,
+        sport: sport.toUpperCase(),
         homeTeam,
         awayTeam,
         gameDate: new Date(gameDate),
-        prediction,
-        confidence,
-        aiReasoning,
+        prediction: selection,
+        confidence: providedConfidence || 60,
+        aiReasoning: providedReasoning || 'User placed bet',
         betType,
         odds,
-        oddsDecimal: oddsDecimal || null,
-        line: line || null,
-        betSize,
-        potentialPayout,
+        oddsDecimal: odds > 0 ? 1 + (odds / 100) : 1 + (100 / Math.abs(odds)),
+        line: line !== undefined ? line : null,
+        betSize: amount,
+        potentialPayout: potentialPayout || amount * 2,
         status: 'Pending',
       },
       include: {
