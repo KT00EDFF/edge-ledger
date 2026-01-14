@@ -196,18 +196,7 @@ export default function AiInsightsPanel() {
         </div>
       )}
 
-      {state.aiEnabled && !state.selectedMatchup && (
-        <div className="text-center py-8">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-dark-hover flex items-center justify-center">
-            <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-            </svg>
-          </div>
-          <p className="text-text-secondary text-sm">Select a matchup to analyze</p>
-        </div>
-      )}
-
-      {state.aiEnabled && state.selectedMatchup && state.aiLoading && (
+      {state.aiLoading && (
         <div className="py-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse" />
@@ -215,13 +204,15 @@ export default function AiInsightsPanel() {
             <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
           </div>
           <p className="text-center text-text-secondary text-sm">Analyzing matchup...</p>
-          <p className="text-center text-text-muted text-xs mt-1">
-            {state.selectedMatchup.awayTeam.name} @ {state.selectedMatchup.homeTeam.name}
-          </p>
+          {state.selectedMatchup && (
+            <p className="text-center text-text-muted text-xs mt-1">
+              {state.selectedMatchup.awayTeam.name} @ {state.selectedMatchup.homeTeam.name}
+            </p>
+          )}
         </div>
       )}
 
-      {state.aiEnabled && state.selectedMatchup && state.aiError && !state.aiLoading && (
+      {state.aiError && !state.aiLoading && (
         <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -235,7 +226,7 @@ export default function AiInsightsPanel() {
         </div>
       )}
 
-      {state.aiEnabled && state.selectedMatchup && state.aiPrediction && !state.aiLoading && (
+      {state.aiPrediction && !state.aiLoading && (
         <div className="space-y-4">
           {state.aiPrediction.recommendedBet && (
             <button
