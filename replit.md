@@ -24,6 +24,9 @@ The platform features a modern dark theme UI inspired by OKX.com's trading dashb
 - **Kelly Criterion Bet Sizing**: When enabled in settings, bet confirmation modal shows recommended bet size based on Kelly Criterion or confidence level
 - **Enhanced Sharp Bettor AI Prompt**: Gemini uses sport-specific analysis with metrics, situational factors, public biases, and value-focused recommendations like a professional sharp bettor
 - **Switched to Google Gemini**: Replaced OpenAI GPT-4 with Google Gemini 2.0 Flash for predictions
+- **AI + Odds Integration**: After AI predicts, system finds best odds for that pick across user's selected sportsbooks
+- **Best Book Recommendation**: Shows which sportsbook has the best line for the AI's recommended bet
+- **Integrated Kelly Sizing**: Calculates Kelly Criterion bet size using actual odds from the best book
 
 ## User Preferences
 

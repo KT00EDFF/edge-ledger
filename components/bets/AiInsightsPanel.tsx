@@ -1,10 +1,47 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNewBet } from '@/lib/new-bet-context'
+import { findBestOddsForPick, formatOddsDisplay, BestOddsResult } from '@/lib/best-odds'
+
+interface Settings {
+  startingBankroll: number
+  currentBankroll: number
+  minBetSize: number
+  maxBetSize: number
+  useKellyCriterion: boolean
+}
+
+function loadSettings(): Settings {
+  if (typeof window === 'undefined') {
+    return {
+      startingBankroll: 1000,
+      currentBankroll: 1000,
+      minBetSize: 10,
+      maxBetSize: 500,
+      useKellyCriterion: false,
+    }
+  }
+  const saved = localStorage.getItem('edgeLedgerSettings')
+  if (saved) {
+    return JSON.parse(saved)
+  }
+  return {
+    startingBankroll: 1000,
+    currentBankroll: 1000,
+    minBetSize: 10,
+    maxBetSize: 500,
+    useKellyCriterion: false,
+  }
+}
 
 export default function AiInsightsPanel() {
   const { state, dispatch, toggleAI, selectBet } = useNewBet()
+  const [settings, setSettings] = useState<Settings>(loadSettings)
+
+  useEffect(() => {
+    setSettings(loadSettings())
+  }, [])
 
   useEffect(() => {
     if (!state.aiEnabled || !state.selectedMatchup) return
@@ -53,12 +90,32 @@ export default function AiInsightsPanel() {
     fetchPrediction()
   }, [state.aiEnabled, state.selectedMatchup, state.selectedSport, dispatch])
 
+  const bestOdds = useMemo<BestOddsResult | null>(() => {
+    if (!state.aiPrediction?.recommendedBet || !state.selectedMatchup || state.odds.length === 0) {
+      return null
+    }
+
+    return findBestOddsForPick(
+      state.aiPrediction.recommendedBet,
+      state.odds,
+      state.selectedMatchup.homeTeam.name,
+      state.selectedMatchup.awayTeam.name,
+      state.aiPrediction.confidence,
+      settings.currentBankroll,
+      settings.minBetSize,
+      settings.maxBetSize,
+      settings.useKellyCriterion,
+      state.selectedMatchup.homeTeam.shortName,
+      state.selectedMatchup.awayTeam.shortName
+    )
+  }, [state.aiPrediction, state.selectedMatchup, state.odds, settings])
+
   const getErrorMessage = (type: string, message: string, details?: string): string => {
     switch (type) {
       case 'quota_exceeded':
-        return 'Your OpenAI credits have run out. Add credits at platform.openai.com'
+        return 'Google API quota exhausted. Check your quota at console.cloud.google.com'
       case 'api_key_missing':
-        return 'OpenAI API key not configured. Add it in Settings > Secrets'
+        return 'Google API key not configured. Add GOOGLE_API_KEY in Settings > Secrets'
       case 'parse_error':
         return 'AI returned an invalid response. Try again.'
       default:
@@ -67,34 +124,14 @@ export default function AiInsightsPanel() {
   }
 
   const handleApplyBestBet = () => {
-    if (!state.aiPrediction?.recommendedBet || !state.selectedMatchup) return
-    
-    const { recommendedBet } = state.aiPrediction
-    
-    const matchingOdds = state.odds.find(o => {
-      if (recommendedBet.betType === 'moneyline' && o.moneyline) return true
-      if (recommendedBet.betType === 'spread' && o.spreads) return true
-      if (recommendedBet.betType === 'total' && o.totals) return true
-      return false
-    })
-    
-    let odds = -110
-    if (matchingOdds) {
-      if (recommendedBet.betType === 'moneyline' && matchingOdds.moneyline) {
-        odds = matchingOdds.moneyline.home
-      } else if (recommendedBet.betType === 'spread' && matchingOdds.spreads) {
-        odds = matchingOdds.spreads.home.price
-      } else if (recommendedBet.betType === 'total' && matchingOdds.totals) {
-        odds = matchingOdds.totals.over.price
-      }
-    }
+    if (!bestOdds) return
     
     selectBet({
-      bookmaker: matchingOdds?.bookmaker || 'Best Available',
-      betType: recommendedBet.betType,
-      selection: recommendedBet.selection,
-      line: recommendedBet.line,
-      odds
+      bookmaker: bestOdds.bookmaker,
+      betType: bestOdds.betType,
+      selection: bestOdds.selection,
+      odds: bestOdds.odds,
+      line: bestOdds.line
     })
   }
 
@@ -195,7 +232,8 @@ export default function AiInsightsPanel() {
           {state.aiPrediction.recommendedBet && (
             <button
               onClick={handleApplyBestBet}
-              className="w-full p-4 bg-gradient-to-br from-accent-green/15 to-transparent border border-accent-green/30 rounded-xl hover:border-accent-green/60 transition-all text-left group"
+              disabled={!bestOdds}
+              className="w-full p-4 bg-gradient-to-br from-accent-green/15 to-transparent border border-accent-green/30 rounded-xl hover:border-accent-green/60 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -211,20 +249,66 @@ export default function AiInsightsPanel() {
                 </span>
               </div>
               
-              <p className="text-white font-bold text-lg mb-2">
-                {state.aiPrediction.recommendedBet.selection}
-              </p>
+              {bestOdds ? (
+                <>
+                  <p className="text-white font-bold text-lg mb-1">
+                    {bestOdds.selection}
+                  </p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-accent-green font-bold text-xl">
+                      {formatOddsDisplay(bestOdds.odds)}
+                    </span>
+                    <span className="text-text-muted text-sm">@</span>
+                    <span className="text-accent-blue font-semibold text-sm">
+                      {bestOdds.bookmaker}
+                    </span>
+                  </div>
+                  
+                  {bestOdds.kellyRecommendation && settings.currentBankroll > 0 && (
+                    <div className="p-2 bg-dark-card/60 rounded-lg mb-2 border border-dark-border/50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-text-muted text-xs">
+                          {bestOdds.kellyRecommendation.method === 'kelly' ? 'Kelly Sizing' : 'Recommended Bet'}
+                        </span>
+                        <span className="text-accent-green font-bold">
+                          ${bestOdds.kellyRecommendation.betSize.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-text-muted text-xs">
+                          {bestOdds.kellyRecommendation.percentage.toFixed(1)}% of bankroll
+                        </span>
+                        <span className="text-text-secondary text-xs">
+                          (${settings.currentBankroll.toFixed(0)} balance)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-white font-bold text-lg mb-2">
+                  {state.aiPrediction.recommendedBet.selection}
+                </p>
+              )}
               
               <p className="text-text-secondary text-sm leading-relaxed line-clamp-2">
                 {state.aiPrediction.recommendedBet.reasoning}
               </p>
               
-              <div className="flex items-center gap-1.5 mt-4 text-accent-green text-xs font-medium">
-                <span>Apply Pick</span>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </div>
+              {bestOdds && (
+                <div className="flex items-center gap-1.5 mt-4 text-accent-green text-xs font-medium">
+                  <span>Apply Pick</span>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </div>
+              )}
+              
+              {!bestOdds && state.odds.length === 0 && (
+                <p className="text-yellow-400/80 text-xs mt-3">
+                  Waiting for odds data to find best book...
+                </p>
+              )}
             </button>
           )}
 
