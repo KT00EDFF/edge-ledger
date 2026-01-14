@@ -9,6 +9,9 @@ The platform features a modern dark theme UI inspired by OKX.com's trading dashb
 ## Recent Changes
 
 ### January 2026
+- **Automated Bet Settlement**: System checks ESPN for final game scores, automatically grades bets (Win/Loss/Push), and updates bankroll
+- **Settlement API** (app/api/bets/settle/route.ts): Triggers settlement for pending bets with ESPN final score lookup
+- **Bankroll Accounting**: Bet amount deducted when placed, stake + winnings returned on wins, stake returned on pushes
 - **New Bet Page Redesign**: Complete overhaul with live ESPN matchup browser, odds table panel, and AI insights toggle
 - **ESPN Integration**: Live game data from ESPN API for NFL, NBA, MLB, NCAAF, and NCAAB
 - **Horizontal Matchup Scroller**: Browse today's games with team logos, times, and sport tags
@@ -57,6 +60,7 @@ Preferred communication style: Simple, everyday language.
 4. **Odds Aggregation** (app/api/odds/matchup/route.ts): Real-time odds from The Odds API
 5. **Bet Sizing** (lib/bet-sizing.ts): Confidence-based sizing and Kelly Criterion
 6. **Analytics** (lib/analytics.ts): Dashboard metrics, win rates, bankroll tracking
+7. **Bet Settlement** (lib/settlement.ts): Automatic grading of ML/Spread/Total bets based on ESPN final scores
 
 ### New Bet Page Components
 - **SportsSwitcher**: Toggle between NFL, NBA, MLB, NCAAF, NCAAB
