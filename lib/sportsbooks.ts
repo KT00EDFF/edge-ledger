@@ -54,3 +54,23 @@ export function getSavedSportsbooks(): string[] {
   }
   return DEFAULT_SELECTED_BOOKS
 }
+
+export function getMainSportsbook(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('edgeLedgerMainSportsbook') || null
+}
+
+export function setMainSportsbook(bookId: string | null): void {
+  if (typeof window === 'undefined') return
+  if (bookId) {
+    localStorage.setItem('edgeLedgerMainSportsbook', bookId)
+  } else {
+    localStorage.removeItem('edgeLedgerMainSportsbook')
+  }
+}
+
+export function getMainSportsbookDetails(): Sportsbook | null {
+  const mainId = getMainSportsbook()
+  if (!mainId) return null
+  return AVAILABLE_SPORTSBOOKS.find(b => b.id === mainId) || null
+}

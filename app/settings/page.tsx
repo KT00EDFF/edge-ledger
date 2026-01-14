@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AVAILABLE_SPORTSBOOKS, DEFAULT_SELECTED_BOOKS } from '@/lib/sportsbooks'
+import { AVAILABLE_SPORTSBOOKS, DEFAULT_SELECTED_BOOKS, getMainSportsbook, setMainSportsbook } from '@/lib/sportsbooks'
 
 interface Settings {
   startingBankroll: number
@@ -44,6 +44,7 @@ export default function SettingsPage() {
     useKellyCriterion: false,
   })
   const [selectedBooks, setSelectedBooks] = useState<string[]>([])
+  const [mainBook, setMainBook] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [showAddFundsModal, setShowAddFundsModal] = useState(false)
@@ -59,6 +60,11 @@ export default function SettingsPage() {
       setSelectedBooks(JSON.parse(savedBooks))
     } else {
       setSelectedBooks(DEFAULT_SELECTED_BOOKS)
+    }
+    
+    const savedMainBook = getMainSportsbook()
+    if (savedMainBook) {
+      setMainBook(savedMainBook)
     }
     
     setIsLoaded(true)
@@ -98,6 +104,7 @@ export default function SettingsPage() {
       
       localStorage.setItem('edgeLedgerSettings', JSON.stringify(updatedSettings))
       localStorage.setItem('edgeLedgerSportsbooks', JSON.stringify(selectedBooks))
+      setMainSportsbook(mainBook || null)
       
       setSettings(updatedSettings)
       setSaveMessage('Settings saved successfully!')
