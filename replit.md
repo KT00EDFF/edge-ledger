@@ -2,7 +2,7 @@
 
 ## Overview
 
-Edge Ledger is a full-stack AI-powered sports betting analytics platform built with Next.js 16. The application helps users track betting performance through AI-powered match predictions (GPT-4), real-time odds aggregation from multiple sportsbooks, smart bet sizing recommendations, and comprehensive bankroll management with performance analytics.
+Edge Ledger is a full-stack AI-powered sports betting analytics platform built with Next.js 16. The application helps users track betting performance through AI-powered match predictions (Google Gemini), real-time odds aggregation from multiple sportsbooks, smart bet sizing recommendations, and comprehensive bankroll management with performance analytics.
 
 The platform features a modern dark theme UI inspired by OKX.com's trading dashboard aesthetic. Users can browse live matchups from ESPN, view real-time odds from multiple sportsbooks, get AI-powered predictions, and place bets with smart sizing recommendations.
 
@@ -13,7 +13,7 @@ The platform features a modern dark theme UI inspired by OKX.com's trading dashb
 - **ESPN Integration**: Live game data from ESPN API for NFL, NBA, MLB, NCAAF, and NCAAB
 - **Horizontal Matchup Scroller**: Browse today's games with team logos, times, and sport tags
 - **Odds Table Panel**: View spread, moneyline, and totals from multiple sportsbooks
-- **AI Analysis Toggle**: Optional GPT-4 predictions with confidence levels and key factors
+- **AI Analysis Toggle**: Optional Gemini predictions with confidence levels and key factors
 - **AI Best Bet Recommendations**: AI now recommends specific bet type (ML/Spread/Total) with selection and reasoning
 - **Completed Games Filter**: ESPN data now excludes finished, postponed, and canceled games
 - **Bet Confirmation Modal**: Clean modal for entering bet amount and confirming placement
@@ -22,7 +22,8 @@ The platform features a modern dark theme UI inspired by OKX.com's trading dashb
 - **Simplified Bankroll Settings**: Only starting bankroll exposed; current balance shown inline; "Add Funds" popup when bankroll hits $0
 - **Sportsbook Selection**: 19 US sportsbooks from The Odds API; selected books filter odds on New Bet page
 - **Kelly Criterion Bet Sizing**: When enabled in settings, bet confirmation modal shows recommended bet size based on Kelly Criterion or confidence level
-- **Enhanced Sharp Bettor AI Prompt**: GPT-4 now uses sport-specific analysis with metrics, situational factors, public biases, and value-focused recommendations like a professional sharp bettor
+- **Enhanced Sharp Bettor AI Prompt**: Gemini uses sport-specific analysis with metrics, situational factors, public biases, and value-focused recommendations like a professional sharp bettor
+- **Switched to Google Gemini**: Replaced OpenAI GPT-4 with Google Gemini 2.0 Flash for predictions
 
 ## User Preferences
 
@@ -49,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 ### Core Features Implementation
 1. **ESPN Integration** (app/api/espn/[sport]/route.ts): Live matchup data from ESPN scoreboard API
 2. **Sports Mapper** (lib/sports-mapper.ts): Normalizes ESPN data and maps team names between APIs
-3. **Prediction Engine** (lib/openai.ts): GPT-4 integration for match predictions
+3. **Prediction Engine** (lib/gemini.ts): Google Gemini integration for match predictions
 4. **Odds Aggregation** (app/api/odds/matchup/route.ts): Real-time odds from The Odds API
 5. **Bet Sizing** (lib/bet-sizing.ts): Confidence-based sizing and Kelly Criterion
 6. **Analytics** (lib/analytics.ts): Dashboard metrics, win rates, bankroll tracking
@@ -75,13 +76,13 @@ Preferred communication style: Simple, everyday language.
 - **ESPN Scoreboard API**: Free public API for live game data
   - Endpoint: `https://site.api.espn.com/apis/site/v2/sports/[sport]/[league]/scoreboard`
   - No API key required
-- **OpenAI API** (OPENAI_API_KEY): GPT-4 for match predictions
+- **Google Gemini API** (GOOGLE_API_KEY): Gemini 2.0 Flash for match predictions
 - **The Odds API** (ODDS_API_KEY): Real-time sportsbook odds
 
 ### Key NPM Dependencies
 - @prisma/client: Database ORM
 - @tanstack/react-query: Server state management
-- openai: OpenAI SDK for predictions
+- @google/generative-ai: Google Gemini SDK for predictions
 - axios: HTTP client for odds API
 - zod: Schema validation
 - zustand: Client state management
@@ -116,7 +117,7 @@ components/
 lib/
 ├── sports-mapper.ts             # ESPN/Odds API normalization
 ├── new-bet-context.tsx          # Betting state management
-├── openai.ts                    # AI prediction logic
+├── gemini.ts                    # AI prediction logic (Google Gemini)
 ├── odds-api.ts                  # Odds fetching utilities
 └── mock-data.ts                 # Mock data generators
 ```

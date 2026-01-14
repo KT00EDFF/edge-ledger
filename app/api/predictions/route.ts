@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generatePrediction, PredictionError } from '@/lib/openai'
+import { generatePrediction, PredictionError } from '@/lib/gemini'
 
 export async function POST(request: NextRequest) {
   try {

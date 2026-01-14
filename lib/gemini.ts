@@ -1,4 +1,4 @@
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { PredictionResult, MatchupInput } from '@/types'
 
 const SPORT_CONFIG: Record<string, {
@@ -149,7 +149,7 @@ const SYSTEM_PROMPT = `You are an elite sports betting analyst. Your goal is to 
 - 50-59%: Slight edge, proceed with caution
 - Below 50%: No clear edge, consider passing
 
-You MUST respond with valid JSON matching the exact structure requested.`
+You MUST respond with ONLY valid JSON matching the exact structure requested. No markdown, no code blocks, just raw JSON.`
 
 function buildPrompt(matchup: MatchupInput): string {
   const { sport, homeTeam, awayTeam, gameDate } = matchup
@@ -185,7 +185,7 @@ ${config.publicBiases.map(b => `• ${b}`).join('\n')}
 
 Analyze ${awayTeam} @ ${homeTeam} and find the best betting value.
 
-Respond with ONLY this JSON structure (no other text):
+Respond with ONLY this JSON structure (no markdown, no code blocks, just raw JSON):
 
 {
   "predictedWinner": "${homeTeam} or ${awayTeam}",
@@ -218,7 +218,8 @@ Respond with ONLY this JSON structure (no other text):
 IMPORTANT: 
 - betType must be exactly "spread", "moneyline", or "total"
 - Generate realistic scores for ${sport}
-- Be honest if there's no clear edge`
+- Be honest if there's no clear edge
+- Return ONLY the JSON object, nothing else`
 }
 
 export type PredictionErrorType = 'quota_exceeded' | 'api_key_missing' | 'api_error' | 'parse_error'
@@ -238,52 +239,59 @@ export class PredictionError extends Error {
 export async function generatePrediction(
   matchup: MatchupInput
 ): Promise<PredictionResult> {
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.GOOGLE_API_KEY
   
   if (!apiKey) {
     throw new PredictionError(
       'api_key_missing',
-      'OpenAI API key not configured',
-      'Add your OPENAI_API_KEY in Settings > Secrets'
+      'Google API key not configured',
+      'Add your GOOGLE_API_KEY in Settings > Secrets'
     )
   }
 
-  const openai = new OpenAI({ apiKey })
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const model = genAI.getGenerativeModel({ 
+    model: 'gemini-2.0-flash',
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 1000,
+      responseMimeType: 'application/json'
+    }
+  })
+
   const prompt = buildPrompt(matchup)
 
-  console.log('=== AI PREDICTION REQUEST ===')
+  console.log('=== GEMINI PREDICTION REQUEST ===')
   console.log('Sport:', matchup.sport)
   console.log('Matchup:', matchup.awayTeam, '@', matchup.homeTeam)
   console.log('Date:', matchup.gameDate)
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: 'json_object' }
-    })
+    const result = await model.generateContent([
+      { text: SYSTEM_PROMPT },
+      { text: prompt }
+    ])
 
-    const responseText = completion.choices[0]?.message?.content
-    console.log('=== AI RAW RESPONSE ===')
+    const responseText = result.response.text()
+    console.log('=== GEMINI RAW RESPONSE ===')
     console.log(responseText)
 
     if (!responseText) {
-      throw new PredictionError('api_error', 'No response from AI')
+      throw new PredictionError('api_error', 'No response from Gemini')
     }
 
     let raw: any
     try {
-      raw = JSON.parse(responseText)
+      const cleanedResponse = responseText
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim()
+      raw = JSON.parse(cleanedResponse)
     } catch {
-      throw new PredictionError('parse_error', 'Invalid JSON from AI', responseText.substring(0, 100))
+      throw new PredictionError('parse_error', 'Invalid JSON from Gemini', responseText.substring(0, 100))
     }
 
-    const result: PredictionResult = {
+    const prediction: PredictionResult = {
       predictedWinner: raw.predictedWinner || matchup.homeTeam,
       confidence: Math.max(0, Math.min(100, raw.confidence || 50)),
       predictedScore: raw.predictedScore,
@@ -299,31 +307,31 @@ export async function generatePrediction(
     }
 
     console.log('=== PARSED PREDICTION ===')
-    console.log('Winner:', result.predictedWinner)
-    console.log('Confidence:', result.confidence)
-    console.log('Recommended:', result.recommendedBet?.selection)
+    console.log('Winner:', prediction.predictedWinner)
+    console.log('Confidence:', prediction.confidence)
+    console.log('Recommended:', prediction.recommendedBet?.selection)
 
-    return result
+    return prediction
   } catch (err: any) {
-    console.error('=== AI ERROR ===', err)
+    console.error('=== GEMINI ERROR ===', err)
 
     if (err instanceof PredictionError) {
       throw err
     }
 
-    if (err?.status === 429 || err?.code === 'insufficient_quota') {
+    if (err?.status === 429 || err?.message?.includes('quota') || err?.message?.includes('RESOURCE_EXHAUSTED')) {
       throw new PredictionError(
         'quota_exceeded',
-        'OpenAI API credits exhausted',
-        'Add credits at platform.openai.com/account/billing'
+        'Google API quota exhausted',
+        'Check your quota at console.cloud.google.com'
       )
     }
 
-    if (err?.status === 401) {
+    if (err?.status === 401 || err?.status === 403 || err?.message?.includes('API_KEY_INVALID')) {
       throw new PredictionError(
         'api_key_missing',
-        'Invalid OpenAI API key',
-        'Check your OPENAI_API_KEY in Settings > Secrets'
+        'Invalid Google API key',
+        'Check your GOOGLE_API_KEY in Settings > Secrets'
       )
     }
 
