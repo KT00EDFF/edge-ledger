@@ -13,28 +13,37 @@ export default function AiInsightsPanel() {
       dispatch({ type: 'SET_AI_LOADING', loading: true })
       dispatch({ type: 'SET_AI_ERROR', error: null })
       
+      const requestBody = {
+        sport: state.selectedSport,
+        homeTeam: state.selectedMatchup!.homeTeam.name,
+        awayTeam: state.selectedMatchup!.awayTeam.name,
+        gameDate: state.selectedMatchup!.startTime
+      }
+
+      console.log('Requesting prediction for:', requestBody)
+      
       try {
         const response = await fetch('/api/predictions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sport: state.selectedSport,
-            homeTeam: state.selectedMatchup!.homeTeam.name,
-            awayTeam: state.selectedMatchup!.awayTeam.name,
-            gameDate: state.selectedMatchup!.startTime
-          })
+          body: JSON.stringify(requestBody)
         })
 
+        const data = await response.json()
+        console.log('Prediction response:', data)
+
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to get prediction')
+          const errorMsg = getErrorMessage(data.errorType, data.error, data.details)
+          throw new Error(errorMsg)
         }
         
-        const data = await response.json()
         dispatch({ type: 'SET_AI_PREDICTION', prediction: data })
       } catch (error) {
         console.error('AI prediction error:', error)
-        dispatch({ type: 'SET_AI_ERROR', error: error instanceof Error ? error.message : 'Failed to get prediction' })
+        dispatch({ 
+          type: 'SET_AI_ERROR', 
+          error: error instanceof Error ? error.message : 'Failed to get prediction' 
+        })
         dispatch({ type: 'SET_AI_PREDICTION', prediction: null })
       } finally {
         dispatch({ type: 'SET_AI_LOADING', loading: false })
@@ -43,6 +52,19 @@ export default function AiInsightsPanel() {
 
     fetchPrediction()
   }, [state.aiEnabled, state.selectedMatchup, state.selectedSport, dispatch])
+
+  const getErrorMessage = (type: string, message: string, details?: string): string => {
+    switch (type) {
+      case 'quota_exceeded':
+        return 'Your OpenAI credits have run out. Add credits at platform.openai.com'
+      case 'api_key_missing':
+        return 'OpenAI API key not configured. Add it in Settings > Secrets'
+      case 'parse_error':
+        return 'AI returned an invalid response. Try again.'
+      default:
+        return details ? `${message}: ${details}` : message
+    }
+  }
 
   const handleApplyBestBet = () => {
     if (!state.aiPrediction?.recommendedBet || !state.selectedMatchup) return
@@ -87,21 +109,21 @@ export default function AiInsightsPanel() {
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 70) return 'text-accent-green'
-    if (confidence >= 55) return 'text-accent-yellow'
-    return 'text-accent-red'
+    if (confidence >= 55) return 'text-yellow-400'
+    return 'text-red-400'
   }
 
   const getConfidenceBg = (confidence: number) => {
     if (confidence >= 70) return 'bg-accent-green/20 border-accent-green/40'
-    if (confidence >= 55) return 'bg-accent-yellow/20 border-accent-yellow/40'
-    return 'bg-accent-red/20 border-accent-red/40'
+    if (confidence >= 55) return 'bg-yellow-400/20 border-yellow-400/40'
+    return 'bg-red-400/20 border-red-400/40'
   }
 
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="section-title mb-0">Sharp Analysis</h3>
+          <h3 className="text-lg font-semibold text-white">Sharp Analysis</h3>
           <p className="text-text-muted text-xs">AI-powered edge detection</p>
         </div>
         <button
@@ -144,22 +166,24 @@ export default function AiInsightsPanel() {
         <div className="py-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse" />
-            <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse delay-75" />
-            <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse delay-150" />
+            <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+            <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
           </div>
           <p className="text-center text-text-secondary text-sm">Analyzing matchup...</p>
-          <p className="text-center text-text-muted text-xs mt-1">Finding edges & value plays</p>
+          <p className="text-center text-text-muted text-xs mt-1">
+            {state.selectedMatchup.awayTeam.name} @ {state.selectedMatchup.homeTeam.name}
+          </p>
         </div>
       )}
 
       {state.aiEnabled && state.selectedMatchup && state.aiError && !state.aiLoading && (
-        <div className="p-4 bg-accent-red/10 border border-accent-red/30 rounded-lg">
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-accent-red flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="text-accent-red font-medium text-sm">Analysis Failed</p>
+              <p className="text-red-400 font-medium text-sm">Analysis Failed</p>
               <p className="text-text-secondary text-xs mt-1">{state.aiError}</p>
             </div>
           </div>
@@ -168,14 +192,11 @@ export default function AiInsightsPanel() {
 
       {state.aiEnabled && state.selectedMatchup && state.aiPrediction && !state.aiLoading && (
         <div className="space-y-4">
-          {/* Best Bet Card */}
           {state.aiPrediction.recommendedBet && (
             <button
               onClick={handleApplyBestBet}
-              className="w-full p-4 bg-gradient-to-br from-accent-green/15 via-accent-green/10 to-transparent border border-accent-green/30 rounded-xl hover:border-accent-green/60 transition-all text-left group relative overflow-hidden"
+              className="w-full p-4 bg-gradient-to-br from-accent-green/15 to-transparent border border-accent-green/30 rounded-xl hover:border-accent-green/60 transition-all text-left group"
             >
-              <div className="absolute top-0 right-0 w-20 h-20 bg-accent-green/5 rounded-full blur-2xl" />
-              
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-accent-green/20 flex items-center justify-center">
@@ -190,7 +211,7 @@ export default function AiInsightsPanel() {
                 </span>
               </div>
               
-              <p className="text-white font-bold text-lg mb-2 pr-4">
+              <p className="text-white font-bold text-lg mb-2">
                 {state.aiPrediction.recommendedBet.selection}
               </p>
               
@@ -198,7 +219,7 @@ export default function AiInsightsPanel() {
                 {state.aiPrediction.recommendedBet.reasoning}
               </p>
               
-              <div className="flex items-center gap-1.5 mt-4 text-accent-green text-xs font-medium group-hover:gap-2.5 transition-all">
+              <div className="flex items-center gap-1.5 mt-4 text-accent-green text-xs font-medium">
                 <span>Apply Pick</span>
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -207,9 +228,7 @@ export default function AiInsightsPanel() {
             </button>
           )}
 
-          {/* Confidence & Score Row */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Confidence */}
             <div className={`p-3 rounded-lg border ${getConfidenceBg(state.aiPrediction.confidence)}`}>
               <p className="text-text-muted text-[10px] uppercase tracking-wider mb-1">Edge Confidence</p>
               <p className={`font-bold text-2xl ${getConfidenceColor(state.aiPrediction.confidence)}`}>
@@ -217,7 +236,6 @@ export default function AiInsightsPanel() {
               </p>
             </div>
             
-            {/* Predicted Score */}
             {state.aiPrediction.predictedScore && (
               <div className="p-3 bg-dark-hover rounded-lg">
                 <p className="text-text-muted text-[10px] uppercase tracking-wider mb-1">Projected Score</p>
@@ -226,18 +244,13 @@ export default function AiInsightsPanel() {
                   <span className="text-text-muted text-xs">-</span>
                   <span className="text-white font-bold text-xl">{state.aiPrediction.predictedScore.home}</span>
                 </div>
-                <div className="flex gap-2 mt-0.5">
-                  <span className="text-text-muted text-[10px]">{state.selectedMatchup.awayTeam.shortName}</span>
-                  <span className="text-text-muted text-[10px]">{state.selectedMatchup.homeTeam.shortName}</span>
-                </div>
               </div>
             )}
           </div>
 
-          {/* Edge Analysis */}
           {state.aiPrediction.edgeAnalysis && (
-            <div className="p-3 bg-accent-blue/10 border border-accent-blue/30 rounded-lg">
-              <p className="text-accent-blue text-[10px] uppercase tracking-wider font-medium mb-3">Edge Analysis</p>
+            <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <p className="text-blue-400 text-[10px] uppercase tracking-wider font-medium mb-3">Edge Analysis</p>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-text-muted text-xs">Market Line</p>
@@ -249,7 +262,7 @@ export default function AiInsightsPanel() {
                 </div>
                 <div>
                   <p className="text-text-muted text-xs">Public Side</p>
-                  <p className="text-accent-red font-medium">{state.aiPrediction.edgeAnalysis.publicSide}</p>
+                  <p className="text-red-400 font-medium">{state.aiPrediction.edgeAnalysis.publicSide}</p>
                 </div>
                 <div>
                   <p className="text-text-muted text-xs">Sharp Side</p>
@@ -257,7 +270,7 @@ export default function AiInsightsPanel() {
                 </div>
               </div>
               {state.aiPrediction.edgeAnalysis.edgePercent > 0 && (
-                <div className="mt-3 pt-3 border-t border-accent-blue/20">
+                <div className="mt-3 pt-3 border-t border-blue-500/20">
                   <div className="flex items-center justify-between">
                     <span className="text-text-muted text-xs">Estimated Edge</span>
                     <span className="text-accent-green font-bold">+{state.aiPrediction.edgeAnalysis.edgePercent}%</span>
@@ -267,7 +280,6 @@ export default function AiInsightsPanel() {
             </div>
           )}
 
-          {/* Winner Prediction */}
           <div className="p-3 bg-dark-hover rounded-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -282,15 +294,13 @@ export default function AiInsightsPanel() {
             </div>
           </div>
 
-          {/* Analysis */}
           {state.aiPrediction.analysis && (
             <div className="p-3 bg-dark-hover rounded-lg">
-              <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Sharp Analysis</p>
+              <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Analysis</p>
               <p className="text-text-secondary text-sm leading-relaxed">{state.aiPrediction.analysis}</p>
             </div>
           )}
 
-          {/* Key Factors */}
           {state.aiPrediction.keyFactors && state.aiPrediction.keyFactors.length > 0 && (
             <div className="p-3 bg-dark-hover rounded-lg">
               <p className="text-text-muted text-[10px] uppercase tracking-wider mb-2">Key Factors</p>
