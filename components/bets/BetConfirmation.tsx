@@ -52,9 +52,9 @@ export default function BetConfirmation({
       homeTeam: matchup.homeTeam,
       awayTeam: matchup.awayTeam,
       gameDate: matchup.gameDate,
-      prediction: prediction.prediction,
+      prediction: prediction.predictedWinner,
       confidence: prediction.confidence,
-      aiReasoning: prediction.reasoning,
+      aiReasoning: prediction.analysis,
       betType: selectedOdds.betType,
       odds: selectedOdds.odds,
       oddsDecimal: selectedOdds.oddsDecimal,
@@ -89,7 +89,7 @@ export default function BetConfirmation({
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-accent-blue/10 rounded-xl p-5 border border-accent-blue/30">
           <h3 className="font-semibold text-white mb-3">AI Prediction</h3>
-          <p className="text-xl font-bold text-white mb-1">{prediction.prediction}</p>
+          <p className="text-xl font-bold text-white mb-1">{prediction.predictedWinner}</p>
           <p className="text-accent-blue font-semibold">{prediction.confidence}% Confidence</p>
         </div>
 
