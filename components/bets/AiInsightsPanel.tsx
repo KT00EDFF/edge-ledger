@@ -43,52 +43,54 @@ export default function AiInsightsPanel() {
     setSettings(loadSettings())
   }, [])
 
-  useEffect(() => {
-    if (!state.aiEnabled || !state.selectedMatchup) return
-
-    const fetchPrediction = async () => {
-      dispatch({ type: 'SET_AI_LOADING', loading: true })
-      dispatch({ type: 'SET_AI_ERROR', error: null })
-      
-      const requestBody = {
-        sport: state.selectedSport,
-        homeTeam: state.selectedMatchup!.homeTeam.name,
-        awayTeam: state.selectedMatchup!.awayTeam.name,
-        gameDate: state.selectedMatchup!.startTime
-      }
-
-      console.log('Requesting prediction for:', requestBody)
-      
-      try {
-        const response = await fetch('/api/predictions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        })
-
-        const data = await response.json()
-        console.log('Prediction response:', data)
-
-        if (!response.ok) {
-          const errorMsg = getErrorMessage(data.errorType, data.error, data.details)
-          throw new Error(errorMsg)
-        }
-        
-        dispatch({ type: 'SET_AI_PREDICTION', prediction: data })
-      } catch (error) {
-        console.error('AI prediction error:', error)
-        dispatch({ 
-          type: 'SET_AI_ERROR', 
-          error: error instanceof Error ? error.message : 'Failed to get prediction' 
-        })
-        dispatch({ type: 'SET_AI_PREDICTION', prediction: null })
-      } finally {
-        dispatch({ type: 'SET_AI_LOADING', loading: false })
-      }
+  const fetchPrediction = async () => {
+    if (!state.selectedMatchup) return
+    
+    dispatch({ type: 'SET_AI_LOADING', loading: true })
+    dispatch({ type: 'SET_AI_ERROR', error: null })
+    
+    const requestBody = {
+      sport: state.selectedSport,
+      homeTeam: state.selectedMatchup.homeTeam.name,
+      awayTeam: state.selectedMatchup.awayTeam.name,
+      gameDate: state.selectedMatchup.startTime
     }
 
-    fetchPrediction()
-  }, [state.aiEnabled, state.selectedMatchup, state.selectedSport, dispatch])
+    console.log('Requesting prediction for:', requestBody)
+    
+    try {
+      const response = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      })
+
+      const data = await response.json()
+      console.log('Prediction response:', data)
+
+      if (!response.ok) {
+        const errorMsg = getErrorMessage(data.errorType, data.error, data.details)
+        throw new Error(errorMsg)
+      }
+      
+      dispatch({ type: 'SET_AI_PREDICTION', prediction: data })
+    } catch (error) {
+      console.error('AI prediction error:', error)
+      dispatch({ 
+        type: 'SET_AI_ERROR', 
+        error: error instanceof Error ? error.message : 'Failed to get prediction' 
+      })
+      dispatch({ type: 'SET_AI_PREDICTION', prediction: null })
+    } finally {
+      dispatch({ type: 'SET_AI_LOADING', loading: false })
+    }
+  }
+
+  useEffect(() => {
+    // Prediction is now triggered by button, but we reset it when matchup/sport changes
+    dispatch({ type: 'SET_AI_PREDICTION', prediction: null })
+    dispatch({ type: 'SET_AI_ERROR', error: null })
+  }, [state.selectedMatchup, state.selectedSport, dispatch])
 
   const bestOdds = useMemo<BestOddsResult | null>(() => {
     if (!state.aiPrediction?.recommendedBet || !state.selectedMatchup || state.odds.length === 0) {
@@ -163,28 +165,34 @@ export default function AiInsightsPanel() {
           <h3 className="text-lg font-semibold text-white">Sharp Analysis</h3>
           <p className="text-text-muted text-xs">AI-powered edge detection</p>
         </div>
-        <button
-          onClick={() => toggleAI(!state.aiEnabled)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            state.aiEnabled ? 'bg-accent-green' : 'bg-dark-border'
-          }`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              state.aiEnabled ? 'translate-x-6' : 'translate-x-1'
-            }`}
-          />
-        </button>
+        {state.aiPrediction && (
+          <button
+            onClick={() => dispatch({ type: 'SET_AI_PREDICTION', prediction: null })}
+            className="text-[10px] uppercase tracking-wider text-text-muted hover:text-white transition-colors"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
-      {!state.aiEnabled && (
-        <div className="text-center py-8">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-dark-hover flex items-center justify-center">
-            <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {!state.aiPrediction && !state.aiLoading && (
+        <div className="text-center py-6">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-dark-hover flex items-center justify-center">
+            <svg className="w-6 h-6 text-accent-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <p className="text-text-secondary text-sm">Enable AI for sharp betting insights</p>
+          <p className="text-text-secondary text-sm mb-4">Get sharp betting insights for this matchup</p>
+          <button
+            onClick={fetchPrediction}
+            disabled={!state.selectedMatchup}
+            className="btn-primary w-full py-2.5 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Generate Prediction
+          </button>
         </div>
       )}
 
