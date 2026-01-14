@@ -21,7 +21,7 @@ export default function NewBetPage() {
         </div>
 
         <div className="mb-6 sm:mb-8">
-          <h2 className="section-title text-base sm:text-lg">Today's Games</h2>
+          <h2 className="section-title text-base sm:text-lg">Upcoming Games</h2>
           <MatchupScroller />
         </div>
 

@@ -59,8 +59,16 @@ export function getEspnEndpoint(sportKey: string, date?: string): string {
   if (!sport) return ''
   
   let url = `https://site.api.espn.com/apis/site/v2/sports/${sport.espnSport}/${sport.espnLeague}/scoreboard`
+  
   if (date) {
     url += `?dates=${date}`
+  } else {
+    const today = new Date()
+    const endDate = new Date(today)
+    endDate.setDate(today.getDate() + 7)
+    
+    const formatDate = (d: Date) => d.toISOString().split('T')[0].replace(/-/g, '')
+    url += `?dates=${formatDate(today)}-${formatDate(endDate)}`
   }
   return url
 }
@@ -187,10 +195,24 @@ export function parseEspnScoreboard(data: any, sportKey: string): NormalizedMatc
   const sport = getSportConfig(sportKey)
   if (!sport || !data.events) return []
 
+  const now = new Date()
+
   return data.events
     .filter((event: any) => {
       const statusName = event.status?.type?.name || ''
-      return statusName !== 'STATUS_FINAL' && statusName !== 'STATUS_POSTPONED' && statusName !== 'STATUS_CANCELED'
+      const gameDate = new Date(event.date)
+      
+      const isNotCompleted = statusName !== 'STATUS_FINAL' && 
+                             statusName !== 'STATUS_POSTPONED' && 
+                             statusName !== 'STATUS_CANCELED'
+      
+      const isNotInProgress = statusName !== 'STATUS_IN_PROGRESS' && 
+                              statusName !== 'STATUS_HALFTIME' &&
+                              statusName !== 'STATUS_END_PERIOD'
+      
+      const hasNotStarted = gameDate > now
+      
+      return isNotCompleted && (isNotInProgress || hasNotStarted)
     })
     .map((event: any) => {
       const competition = event.competitions?.[0]
