@@ -4,7 +4,7 @@ AI-powered sports betting analytics and prediction platform with real-time odds 
 
 ## Features
 
-- **AI Predictions**: GPT-4 powered match outcome predictions with confidence levels
+- **AI Predictions**: Gemini powered match outcome predictions with confidence levels
 - **Odds Aggregation**: Real-time odds from multiple sportsbooks via The Odds API
 - **Smart Bet Sizing**: Automatic bet size calculation based on confidence and bankroll
 - **Bankroll Tracking**: Real-time bankroll management and performance analytics
