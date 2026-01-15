@@ -35,7 +35,6 @@ export default function BetsPage() {
   const [settling, setSettling] = useState(false)
   const [settleResult, setSettleResult] = useState<string | null>(null)
   const [filter, setFilter] = useState<FilterStatus>('all')
-  const [userId] = useState('default-user')
 
   useEffect(() => {
     fetchBets()
@@ -43,7 +42,7 @@ export default function BetsPage() {
 
   const fetchBets = async () => {
     try {
-      const response = await fetch(`/api/bets?userId=${userId}`)
+      const response = await fetch('/api/bets')
       if (response.ok) {
         const data = await response.json()
         setBets(data)
@@ -58,12 +57,11 @@ export default function BetsPage() {
   const handleSettleBets = async () => {
     setSettling(true)
     setSettleResult(null)
-    
+
     try {
       const response = await fetch('/api/bets/settle', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        headers: { 'Content-Type': 'application/json' }
       })
       
       const data = await response.json()
