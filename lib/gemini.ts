@@ -265,7 +265,7 @@ export async function generatePrediction(
 
   // Use Gemini 2.0 Flash Thinking mode for deeper reasoning
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash-thinking-exp-1219',
+    model: 'gemini-2.0-flash-thinking-exp',
     generationConfig: {
       temperature: 0.7,
       maxOutputTokens: 8000,  // Increased for thinking mode
@@ -275,8 +275,8 @@ export async function generatePrediction(
 
   const prompt = buildPrompt(matchup)
 
-  console.log('=== GEMINI 3 THINKING MODE PREDICTION REQUEST ===')
-  console.log('Model: gemini-2.0-flash-thinking-exp-1219')
+  console.log('=== GEMINI 2.0 FLASH THINKING MODE PREDICTION REQUEST ===')
+  console.log('Model: gemini-2.0-flash-thinking-exp')
   console.log('Sport:', matchup.sport)
   console.log('Matchup:', matchup.awayTeam, '@', matchup.homeTeam)
   console.log('Date:', matchup.gameDate)
