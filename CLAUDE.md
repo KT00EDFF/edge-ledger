@@ -592,6 +592,57 @@ docker-compose exec app npx prisma migrate deploy
 
 ## API Integration
 
+### User API
+
+**Location**: `/app/api/user/route.ts`
+
+**Purpose**: Fetch or create the default user's bankroll information
+
+**Endpoint**:
+```typescript
+GET /api/user
+```
+
+**Response**:
+```typescript
+{
+  id: string
+  startingBankroll: number
+  currentBankroll: number
+  minBetSize: number
+  maxBetSize: number
+  useKellyCriterion: boolean
+}
+```
+
+**Implementation Pattern**:
+```typescript
+export async function GET() {
+  try {
+    const user = await getOrCreateDefaultUser()
+    return NextResponse.json(user)
+  } catch (error) {
+    console.error('Error fetching user:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch user' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+**Usage**:
+```typescript
+// In components (e.g., dashboard)
+const response = await fetch('/api/user')
+const user = await response.json()
+```
+
+**Notes**:
+- Auto-creates default user if none exists
+- No authentication required (single-user system)
+- Used primarily by dashboard for bankroll display
+
 ### The Odds API
 
 **Location**: `/lib/odds-api.ts`, `/app/api/odds/matchup/route.ts`
@@ -895,6 +946,30 @@ const raw = JSON.parse(cleanedResponse)
 
 No manual intervention required anymore.
 
+### 11. Dashboard Components Defined Inline
+
+**Issue**: Dashboard has multiple reusable components (StatCard, TimeFilter).
+
+**Reality**: Components are defined inline within `/app/page.tsx` instead of extracted to `/components/`.
+
+**Opportunity**: Could extract for reusability and cleaner code organization.
+
+### 12. Non-Functional Time Filter
+
+**Issue**: Dashboard has time filter buttons (1D, 1W, 1M, 1Y, All).
+
+**Reality**: UI is rendered but has no click handlers or filtering logic.
+
+**Action**: Time filtering is a placeholder for future implementation.
+
+### 13. Client-Side Analytics Calculations
+
+**Issue**: Analytics (P/L, ROI, win rate) recalculated on every render.
+
+**Reality**: No memoization or server-side calculation used.
+
+**Opportunity**: Could optimize with `useMemo` or move to API route for better performance.
+
 ---
 
 ## Common Tasks
@@ -991,6 +1066,148 @@ No manual intervention required anymore.
 
 2. **Add navigation** in `/components/layout/Navbar.tsx`
 
+### Fetching and Displaying Real Data (Dashboard Pattern)
+
+The dashboard (`/app/page.tsx`) demonstrates the standard pattern for fetching and displaying real data.
+
+**Pattern**:
+```typescript
+'use client'
+
+interface User {
+  id: string
+  startingBankroll: number
+  currentBankroll: number
+}
+
+interface Bet {
+  // ... bet fields
+  status: string
+  profit: number | null
+}
+
+export default function Dashboard() {
+  const [user, setUser] = useState<User | null>(null)
+  const [bets, setBets] = useState<Bet[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Parallel API calls for performance
+        const [userRes, betsRes] = await Promise.all([
+          fetch('/api/user'),
+          fetch('/api/bets?userId=default-user')
+        ])
+
+        if (!userRes.ok || !betsRes.ok) {
+          throw new Error('Failed to fetch data')
+        }
+
+        const userData = await userRes.json()
+        const betsData = await betsRes.json()
+
+        setUser(userData)
+        setBets(betsData)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  return (
+    <div>
+      {/* Render data */}
+    </div>
+  )
+}
+```
+
+**Key Points**:
+- Use `Promise.all()` for parallel API calls when data is independent
+- Handle loading state with spinner UI
+- Error handling with try/catch and console logging
+- Single useEffect with empty dependency array for initial load
+
+### Calculating Client-Side Analytics
+
+The dashboard demonstrates client-side analytics calculation from fetched bet data.
+
+**Pattern**:
+```typescript
+// Filter bets by status
+const settledBets = bets.filter(b =>
+  b.status === 'Won' || b.status === 'Lost' || b.status === 'Push'
+)
+const wonBets = bets.filter(b => b.status === 'Won')
+const pendingBets = bets.filter(b => b.status === 'Pending')
+
+// Calculate metrics
+const totalPL = settledBets.reduce((sum, bet) => sum + (bet.profit || 0), 0)
+const winRate = settledBets.length > 0
+  ? (wonBets.length / settledBets.length) * 100
+  : 0
+const totalWagered = settledBets.reduce((sum, bet) => sum + bet.betSize, 0)
+const roi = totalWagered > 0 ? (totalPL / totalWagered) * 100 : 0
+const avgConfidence = bets.length > 0
+  ? bets.reduce((sum, bet) => sum + bet.confidence, 0) / bets.length
+  : 0
+```
+
+**Status Color Coding**:
+```typescript
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'Won': return 'text-accent-green bg-accent-green/20'
+    case 'Lost': return 'text-red-400 bg-red-400/20'
+    case 'Push': return 'text-yellow-400 bg-yellow-400/20'
+    default: return 'text-accent-blue bg-accent-blue/20'
+  }
+}
+```
+
+**Component Pattern (Inline)**:
+```typescript
+// Dashboard defines components inline rather than in /components
+function StatCard({
+  label,
+  value,
+  change,
+  subtext
+}: {
+  label: string
+  value: string | number
+  change?: number
+  subtext?: string
+}) {
+  return (
+    <div className="dark-card p-6">
+      <p className="text-sm text-text-secondary mb-1">{label}</p>
+      <p className="text-2xl font-bold mb-1">{value}</p>
+      {change !== undefined && (
+        <p className={`text-sm ${change >= 0 ? 'text-accent-green' : 'text-red-400'}`}>
+          {change >= 0 ? '+' : ''}{change.toFixed(1)}%
+        </p>
+      )}
+      {subtext && <p className="text-xs text-text-secondary mt-1">{subtext}</p>}
+    </div>
+  )
+}
+```
+
+**Notes**:
+- Analytics calculated on every render (could be optimized with useMemo)
+- Components defined inline in page rather than extracted to /components
+- Time filter UI present but non-functional (no state handlers)
+
 ---
 
 ## Testing Strategy
@@ -1085,17 +1302,24 @@ docker-compose logs -f app
 ## File Change Frequency
 
 **Most Frequently Modified**:
-1. `/lib/gemini.ts` - AI prompt tuning
-2. `/components/bets/AiInsightsPanel.tsx` - Prediction UI
-3. `/lib/sports-mapper.ts` - ESPN data parsing
-4. `/app/api/bets/route.ts` - Bet creation logic
-5. `/lib/settlement.ts` - Settlement logic
+1. `/app/page.tsx` - Dashboard UI and analytics
+2. `/lib/gemini.ts` - AI prompt tuning
+3. `/components/bets/AiInsightsPanel.tsx` - Prediction UI
+4. `/lib/sports-mapper.ts` - ESPN data parsing
+5. `/app/api/bets/route.ts` - Bet creation logic
+6. `/lib/settlement.ts` - Settlement logic
 
 **Configuration Files**:
 1. `.env.local` - API keys (never commit!)
 2. `prisma/schema.prisma` - Database schema
 3. `tailwind.config.ts` - Design system
 4. `next.config.js` - Next.js settings
+
+**API Routes**:
+1. `/app/api/user/route.ts` - User data endpoint
+2. `/app/api/bets/route.ts` - Bet CRUD operations
+3. `/app/api/predictions/route.ts` - AI predictions
+4. `/app/api/odds/matchup/route.ts` - Live odds fetching
 
 ---
 
@@ -1178,7 +1402,7 @@ docker-compose logs -f app
 
 ---
 
-**Last Updated**: 2026-01-15
+**Last Updated**: 2026-01-19
 
 **Recent Fixes**: Fixed 5 critical gotchas:
 - ✅ Removed unused dependencies (Zustand, OpenAI, react-hook-form, TanStack Query)

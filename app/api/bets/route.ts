@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const userIdParam = searchParams.get('userId')
     
     const user = await getOrCreateDefaultUser()
-    const userId = userIdParam || user.id
+    const userId = (!userIdParam || userIdParam === 'default-user') ? user.id : userIdParam
 
     const bets = await prisma.bet.findMany({
       where: { userId },
