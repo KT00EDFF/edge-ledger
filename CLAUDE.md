@@ -751,9 +751,9 @@ interface NormalizedMatchup {
 
 ### Overview
 
-The app uses **Google Gemini 2.0 Flash Thinking Mode** for AI-powered predictions with deep analytical reasoning. The `.env.example` file correctly uses `GOOGLE_API_KEY`.
+The app uses **Google Gemini 2.0 Flash Experimental** for AI-powered predictions with deep analytical reasoning. The `.env.example` file correctly uses `GOOGLE_API_KEY`.
 
-**Version**: Gemini 2.0 Flash Thinking Experimental (`gemini-2.0-flash-thinking-exp`)
+**Version**: Gemini 2.0 Flash Experimental (`gemini-2.0-flash-exp`)
 
 ### Location
 
@@ -766,10 +766,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!)
 const model = genAI.getGenerativeModel({
-  model: 'gemini-2.0-flash-thinking-exp',  // Gemini 2.0 Flash Thinking Mode
+  model: 'gemini-2.0-flash-exp',  // Gemini 2.0 Flash Experimental
   generationConfig: {
     temperature: 0.7,
-    maxOutputTokens: 8000,  // Increased for thinking mode
+    maxOutputTokens: 8000,  // Increased for complex analysis
     responseMimeType: 'application/json'  // Forces JSON
   }
 })
