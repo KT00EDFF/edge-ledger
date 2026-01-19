@@ -751,7 +751,9 @@ interface NormalizedMatchup {
 
 ### Overview
 
-The app uses **Google Gemini 2.0 Flash** for AI-powered predictions. The `.env.example` file correctly uses `GOOGLE_API_KEY`.
+The app uses **Google Gemini 2.0 Flash Thinking Mode** for AI-powered predictions with deep analytical reasoning. The `.env.example` file correctly uses `GOOGLE_API_KEY`.
+
+**Version**: Gemini 3 (gemini-2.0-flash-thinking-exp-1219)
 
 ### Location
 
@@ -764,10 +766,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!)
 const model = genAI.getGenerativeModel({
-  model: 'gemini-2.0-flash',
+  model: 'gemini-2.0-flash-thinking-exp-1219',  // Gemini 3 Thinking Mode
   generationConfig: {
     temperature: 0.7,
-    maxOutputTokens: 1000,
+    maxOutputTokens: 8000,  // Increased for thinking mode
     responseMimeType: 'application/json'  // Forces JSON
   }
 })
@@ -783,45 +785,96 @@ const model = genAI.getGenerativeModel({
 
 ### Prompt Engineering
 
+**3-Phase Analytical Framework**:
+
+1. **Phase 1: Analytical Baseline** - Advanced statistical modeling using sport-specific metrics
+2. **Phase 2: Sharp Intangibles** - Situational edges (RLM, motivational spots, weather)
+3. **Phase 3: Structured Output** - Prediction with explicit "pass" option
+
 **Sport-Specific Configuration**:
 ```typescript
 SPORT_CONFIG = {
   NFL: {
-    keyMetrics: ['DVOA', 'EPA/play', 'Success Rate', 'Turnover Differential'],
-    situationalFactors: ['Rest advantage', 'Weather', 'Divisional matchup'],
-    keyNumbers: [3, 7, 10, 14],  // Critical NFL margins
-    publicBiases: ['Home favorites', 'Big brands', 'Overs']
+    analyticalMetrics: [
+      'EPA/play (Expected Points Added)',
+      'Success Rate',
+      'DVOA rankings',
+      'Offensive/Defensive line win rates (trench matchups)',
+      'Red zone efficiency',
+      'Pressure rate and sack percentage'
+    ],
+    sharpIntangibles: [
+      'Reverse Line Movement (70%+ public but line moves opposite)',
+      'Motivational/Situational Spots (look-ahead, trap, revenge games)',
+      'Weather Impact (wind >15mph, temperature)',
+      'Injury News (focus on "glue" players, not just stars)',
+      'Days of rest differential'
+    ],
+    typicalScoreRange: '17-35 points per team'
   },
   // ... NBA, MLB, NCAAF, NCAAB
 }
 ```
 
 **System Prompt Philosophy**:
-- "Value Over Winners" - Find mispriced lines
-- "Contrarian Thinking" - Fade public sentiment
-- Confidence based on edge size, not arbitrary
+- **Professional Quant Analyst** - Rigorous, data-driven approach
+- **Honesty Over Action** - Recommend PASS when no clear edge exists
+- **Model-Based Projections** - Use advanced metrics, NOT simple season averages
+- **Value-Focused** - Small edge at good price beats likely winner at bad price
+- **Confidence Rating 1-10** - Below 5 triggers automatic PASS recommendation
 - Forces structured JSON output
 
-**Expected Response**:
+**Expected Response Structure**:
 ```json
 {
-  "predictedWinner": "Kansas City Chiefs",
-  "confidence": 72,
-  "predictedScore": { "home": 27, "away": 24 },
-  "edgeAnalysis": {
-    "pregameSpread": -3.5,
-    "impliedSpread": -4.2,
-    "edge": 0.7,
-    "valueRating": "Moderate"
+  "modelProjection": {
+    "projectedScore": { "home": 27, "away": 24 },
+    "methodology": "Brief explanation of Phase 1 modeling approach"
   },
-  "analysis": "Detailed reasoning...",
-  "keyFactors": ["Factor 1", "Factor 2"],
+  "sharpAngle": "ONE specific reason the market might be wrong",
+  "edgeAnalysis": {
+    "marketLine": "Chiefs -3.5",
+    "fairLine": "Chiefs -4.2",
+    "edgePercent": 3.5,
+    "publicSide": "Chiefs",
+    "sharpSide": "Bills",
+    "reverseLineMovement": "If applicable: RLM pattern description",
+    "motivationalSpot": "If applicable: situational edge",
+    "weatherImpact": "If applicable: weather factors"
+  },
+  "predictedWinner": "Kansas City Chiefs",
+  "confidence": 70,
+  "confidenceRating": 7,
+  "predictedScore": { "home": 27, "away": 24 },
+  "analysis": "2-3 sentences explaining the betting value",
+  "keyFactors": ["Primary edge driver", "Supporting factor", "Sharp intangible"],
+  "shouldPass": false,
   "recommendedBet": {
     "betType": "spread",
-    "selection": "Chiefs -3.5",
-    "line": -3.5,
-    "reasoning": "..."
+    "selection": "Bills +3.5",
+    "line": 3.5,
+    "reasoning": "Why this bet offers best value"
   }
+}
+```
+
+**New Fields in Gemini 3**:
+- `modelProjection` - Phase 1 analytical baseline with methodology
+- `sharpAngle` - Phase 2 key insight about market mispricing
+- `confidenceRating` - 1-10 scale (maps to confidence percentage)
+- `shouldPass` - True when confidence rating < 5 (no clear edge)
+- `edgeAnalysis.reverseLineMovement` - RLM indicators
+- `edgeAnalysis.motivationalSpot` - Situational advantages
+- `edgeAnalysis.weatherImpact` - Weather-related factors
+
+**Pass Scenario** (confidenceRating < 5):
+```json
+{
+  "shouldPass": true,
+  "confidenceRating": 3,
+  "confidence": 30,
+  "analysis": "No clear edge identified. Public and sharp sides aligned...",
+  "recommendedBet": null
 }
 ```
 

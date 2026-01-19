@@ -2,152 +2,135 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { PredictionResult, MatchupInput } from '@/types'
 
 const SPORT_CONFIG: Record<string, {
-  keyMetrics: string[]
-  situationalFactors: string[]
-  keyNumbers: string[]
-  publicBiases: string[]
+  analyticalMetrics: string[]
+  sharpIntangibles: string[]
+  typicalScoreRange: string
 }> = {
   NFL: {
-    keyMetrics: [
-      'DVOA rankings (offense/defense)',
-      'Red zone efficiency',
-      'Turnover differential',
-      'Third-down conversion rates',
-      'Pressure rate and sack percentage'
+    analyticalMetrics: [
+      'EPA/play (Expected Points Added per play) for offense and defense',
+      'Success Rate (% of plays that gain positive expected points)',
+      'DVOA (Defense-adjusted Value Over Average) rankings',
+      'Offensive/Defensive line win rates - trench matchup metrics',
+      'Red zone efficiency (TD% inside the 20)',
+      'Pressure rate and sack percentage',
+      'Third-down conversion rates (offensive and defensive)'
     ],
-    situationalFactors: [
-      'Days of rest between games',
-      'Travel distance and time zones',
-      'Division rivalry dynamics',
-      'Coming off bye vs short week',
-      'Weather conditions (outdoor games)'
+    sharpIntangibles: [
+      'Reverse Line Movement: Track if public is 70%+ on one side but line moves opposite',
+      'Motivational/Situational Spots: Look-ahead games, trap games, revenge spots, division rivalry intensity',
+      'Weather Impact: Wind speeds >15mph affect passing/kicking, temperature for outdoor games',
+      'Injury News: Focus on "glue" players (O-line, linebackers) not just skill position stars',
+      'Days of rest differential (bye week advantage, short week disadvantage)',
+      'Travel distance and time zone changes'
     ],
-    keyNumbers: [
-      '3 and 7 are key margins (FG and TD)',
-      '-3 is the most common final margin',
-      'Home field worth ~2.5 points'
-    ],
-    publicBiases: [
-      'Public overvalues recent offensive explosions',
-      'Public loves home favorites',
-      'Prime time games get inflated lines'
-    ]
+    typicalScoreRange: '17-35 points per team'
   },
   NBA: {
-    keyMetrics: [
-      'Offensive/defensive rating per 100 possessions',
-      'Pace of play',
-      'Effective field goal percentage',
-      'Rebounding rates',
-      'Three-point shooting splits'
+    analyticalMetrics: [
+      'Adjusted Net Rating (points per 100 possessions, strength of schedule adjusted)',
+      'Pace (possessions per game) - crucial for total projections',
+      'True Shooting % (accounts for 3-pointers and free throws)',
+      'Effective Field Goal % differential',
+      'Rebounding rates (offensive and defensive)',
+      'Turnover percentage and points off turnovers',
+      'Defensive rating per 100 possessions'
     ],
-    situationalFactors: [
-      'Back-to-back fatigue (2nd night)',
-      'Days of rest (0, 1, 2, 3+)',
-      'Cross-country travel',
-      'Load management patterns',
-      'Altitude games (Denver)'
+    sharpIntangibles: [
+      'Rest Advantage: Teams on back-to-backs (2nd night) vs well-rested opponents',
+      'Days of rest patterns (0, 1, 2, 3+ days)',
+      'Cross-country travel and time zone changes (East to West coast)',
+      'Load management patterns for star players',
+      'Altitude factor (Denver home games)',
+      'Referee tendencies: Some refs call more fouls (higher pace/scoring)',
+      'Motivational spots: Statement games, playoff positioning'
     ],
-    keyNumbers: [
-      'Home court worth ~3-4 points',
-      'Large favorites (-10+) often fail to cover',
-      'First half often tells different story'
-    ],
-    publicBiases: [
-      'Public overvalues star power',
-      'Public ignores rest advantages',
-      'Public chases overs'
-    ]
+    typicalScoreRange: '95-125 points per team'
   },
   MLB: {
-    keyMetrics: [
-      'Starting pitcher ERA, WHIP, FIP',
-      'Bullpen ERA and workload',
-      'Team batting vs handedness splits',
-      'On-base percentage and OPS'
+    analyticalMetrics: [
+      'FIP (Fielding Independent Pitching) for starting pitchers - better than ERA',
+      'Bullpen xFIP (expected FIP) and recent workload (innings pitched last 3 days)',
+      'wRC+ (Weighted Runs Created Plus) adjusted for ballpark factors',
+      'Batting vs. handedness splits (RHP vs LHP)',
+      'Team strikeout and walk rates',
+      'BABIP (Batting Average on Balls in Play) regression indicators',
+      'Bullpen availability and high-leverage reliever usage'
     ],
-    situationalFactors: [
-      'Day game after night game',
-      'Pitcher days rest',
-      'Bullpen availability',
-      'Weather and wind direction',
-      'Ballpark factors'
+    sharpIntangibles: [
+      'Day game after night game (fatigue factor)',
+      'Starting pitcher days of rest (4th vs 5th day)',
+      'Bullpen fatigue: Check last 3 games usage',
+      'Weather: Wind direction (blowing in/out affects totals significantly)',
+      'Ballpark factors: Some parks heavily favor hitters or pitchers',
+      'Umpire tendencies: Strike zone size affects runs scored',
+      'Divisional familiarity (teams see each other 19 times)'
     ],
-    keyNumbers: [
-      'Run line (-1.5/+1.5) value',
-      'First 5 innings isolates starters',
-      'Home field minimal (~54% win rate)'
-    ],
-    publicBiases: [
-      'Public overvalues win streaks',
-      'Public bets favorites too heavily',
-      'Public ignores bullpen fatigue'
-    ]
+    typicalScoreRange: '3-6 runs per team'
   },
   NCAAF: {
-    keyMetrics: [
-      'SP+ and FEI ratings',
-      'Yards per play differential',
-      'Explosive play rate',
-      'Turnover margin'
+    analyticalMetrics: [
+      'SP+ ratings (Success Rate and explosiveness combined)',
+      'FEI (Frequency, Efficiency, Impact) rankings',
+      'Yards per play differential (offensive vs defensive)',
+      'Explosive play rate (plays of 15+ yards)',
+      'Turnover margin and turnover luck regression',
+      'Rushing success rate (critical in college football)',
+      'Defensive havoc rate (TFLs, sacks, forced fumbles)'
     ],
-    situationalFactors: [
-      'Conference vs non-conference',
-      'Rivalry motivation',
-      'Bye week preparation',
-      'Weather conditions',
-      'Trap games before marquee matchups'
+    sharpIntangibles: [
+      'Conference vs non-conference matchups (motivation levels)',
+      'Rivalry game intensity and historical patterns',
+      'Bye week preparation advantage',
+      'Trap games: Teams looking ahead to marquee matchups',
+      'Weather conditions (especially cold, rain for passing teams)',
+      'Home field advantage (larger in college - passionate student sections)',
+      'Coaching matchup history and tendencies'
     ],
-    keyNumbers: [
-      '3 and 7 still key like NFL',
-      'Larger spreads common (20+ favorites)',
-      'Home field worth 3-4 points'
-    ],
-    publicBiases: [
-      'Public overvalues blue bloods',
-      'Public ignores G5 teams with strong metrics',
-      'Public loves big favorites'
-    ]
+    typicalScoreRange: '14-45 points per team (wide variance)'
   },
   NCAAB: {
-    keyMetrics: [
-      'KenPom rankings (AdjO, AdjD)',
-      'Effective field goal percentage',
-      'Turnover percentage',
-      'Rebounding rates'
+    analyticalMetrics: [
+      'KenPom rankings: AdjO (Adjusted Offensive Efficiency) and AdjD (Adjusted Defensive Efficiency)',
+      'Effective Field Goal % and eFG% defense',
+      'Turnover percentage (offensive and defensive)',
+      'Offensive and defensive rebounding rates',
+      'Free throw rate and opponent free throw rate',
+      'Tempo-free statistics (per 100 possessions)',
+      'Three-point shooting % and volume'
     ],
-    situationalFactors: [
-      'Conference tournament fatigue',
-      'Travel distance',
-      'Revenge spots',
-      'Rest days between games'
+    sharpIntangibles: [
+      'Conference tournament fatigue (teams playing 4 games in 4 days)',
+      'Travel distance for road games',
+      'Revenge spots (teams that lost earlier matchup)',
+      'Rest days between games (especially during conference play)',
+      'Home court advantage: Small gyms can be worth 5-6 points vs large arenas at 3-4 points',
+      'Foul trouble and bench depth',
+      'Coaching chess match (especially in tournament settings)'
     ],
-    keyNumbers: [
-      'Home court worth 3-4 points',
-      'Small gyms can be 5-6 points',
-      '12-5 upset rate ~35% in March'
-    ],
-    publicBiases: [
-      'Public loves big-name programs',
-      'Public undervalues mid-majors',
-      'Public ignores tempo differences'
-    ]
+    typicalScoreRange: '60-80 points per team'
   }
 }
 
-const SYSTEM_PROMPT = `You are an elite sports betting analyst. Your goal is to find VALUE where the market has mispriced a game.
+const SYSTEM_PROMPT = `You are a Professional Sports Betting Lead Quantitative Analyst and "Sharp" Handicapper.
 
-## Core Philosophy:
-1. **Value Over Winners**: A 60% winner at -200 is worse than a 45% underdog at +180
-2. **Contrarian Thinking**: When everyone loves a team, ask why the line isn't higher
-3. **Situational Edges**: Rest, travel, motivation create exploitable spots
-4. **Fade the Public**: Recreational bettors have predictable biases
+Your role is to provide rigorous, data-driven betting analysis using advanced statistical modeling and professional handicapping techniques. You approach each matchup with the mindset of a professional bettor seeking +EV (positive expected value) opportunities.
 
-## Confidence Scoring (Based on Edge Size):
-- 75-90%: Clear mispricing with strong support (rare)
-- 60-74%: Solid edge with supporting factors
-- 50-59%: Slight edge, proceed with caution
-- Below 50%: No clear edge, consider passing
+## Core Principles:
+1. **Model-Based Projections**: Use sport-specific advanced metrics, NOT simple season averages
+2. **Sharp Handicapping**: Identify situational edges the public overlooks
+3. **Honesty Over Action**: If there's no clear edge, recommend PASSING on the game
+4. **Value-Focused**: A small edge at a good price beats a likely winner at a bad price
+
+## Confidence Rating Scale (1-10):
+- **9-10**: "Hammer" play - Extremely rare, multiple converging edges
+- **7-8**: Strong edge with solid data support and situational factors aligned
+- **5-6**: Moderate edge, proceed with normal sizing
+- **3-4**: Slight edge, consider smaller sizing or passing
+- **1-2**: No clear edge or insufficient data - PASS on this game
+
+## Critical Rule:
+If you cannot identify a clear edge (confidence rating below 5), you MUST set shouldPass to true and explain why there's insufficient evidence to bet this game. Never force a pick when the data doesn't support it.
 
 You MUST respond with ONLY valid JSON matching the exact structure requested. No markdown, no code blocks, just raw JSON.`
 
@@ -159,67 +142,96 @@ function buildPrompt(matchup: MatchupInput): string {
   return `## MATCHUP TO ANALYZE
 
 **Sport:** ${sport}
-**Home Team:** ${homeTeam}
-**Away Team:** ${awayTeam}
+**Matchup:** ${awayTeam} @ ${homeTeam}
 **Game Date:** ${gameDate}
 
 ---
 
-## SPORT-SPECIFIC CONTEXT (${sport}):
+## PHASE 1: THE ANALYTICAL BASELINE
 
-**Key Metrics to Consider:**
-${config.keyMetrics.map(m => `• ${m}`).join('\n')}
+Use sport-specific advanced modeling to establish a projected score. Do NOT use simple season averages.
 
-**Situational Factors:**
-${config.situationalFactors.map(f => `• ${f}`).join('\n')}
+**For ${sport}, analyze these key metrics:**
+${config.analyticalMetrics.map(m => `• ${m}`).join('\n')}
 
-**Key Numbers:**
-${config.keyNumbers.map(n => `• ${n}`).join('\n')}
+**Typical Score Range for ${sport}:** ${config.typicalScoreRange}
 
-**Public Biases to Exploit:**
-${config.publicBiases.map(b => `• ${b}`).join('\n')}
+Build your model projection considering:
+- How each team performs in these advanced metrics
+- Head-to-head matchup advantages in specific areas
+- Expected game script and pace
 
 ---
 
-## YOUR TASK:
+## PHASE 2: THE "SHARP" INTANGIBLES (THE EDGE)
 
-Analyze ${awayTeam} @ ${homeTeam} and find the best betting value.
+Adjust your baseline using these high-level handicapping factors:
 
-Respond with ONLY this JSON structure (no markdown, no code blocks, just raw JSON):
+${config.sharpIntangibles.map(f => `• ${f}`).join('\n')}
+
+**Critical Questions to Answer:**
+1. Is there Reverse Line Movement? (Public on one side, line moving opposite)
+2. What's the motivational/situational spot? (Look-ahead, trap, revenge)
+3. Are there high-impact news or weather factors?
+4. Where is the "smart money" likely positioned?
+
+---
+
+## PHASE 3: THE OUTPUT
+
+Analyze ${awayTeam} @ ${homeTeam} and respond with ONLY this JSON structure (no markdown, no code blocks):
 
 {
-  "predictedWinner": "${homeTeam} or ${awayTeam}",
-  "confidence": 65,
-  "predictedScore": {
-    "home": 105,
-    "away": 102
+  "modelProjection": {
+    "projectedScore": {
+      "home": 24,
+      "away": 21
+    },
+    "methodology": "Brief explanation of your Phase 1 modeling approach and key metrics used"
   },
+  "sharpAngle": "ONE specific reason the betting market might be wrong about this game (Phase 2 insight)",
   "edgeAnalysis": {
-    "marketLine": "Estimated market line",
-    "fairLine": "Your calculated fair line",
+    "marketLine": "Current estimated spread/total",
+    "fairLine": "Your calculated fair line based on model",
     "edgePercent": 3.5,
-    "publicSide": "Which side public favors",
-    "sharpSide": "Which side sharps favor"
+    "publicSide": "Which side the public is betting",
+    "sharpSide": "Which side sharp money appears to favor",
+    "reverseLineMovement": "If applicable: description of RLM pattern",
+    "motivationalSpot": "If applicable: situational edge description",
+    "weatherImpact": "If applicable: weather factor impact"
   },
-  "analysis": "2-3 sentences explaining where the value is and why the market is wrong.",
+  "predictedWinner": "${homeTeam} or ${awayTeam}",
+  "confidence": 75,
+  "confidenceRating": 8,
+  "predictedScore": {
+    "home": 24,
+    "away": 21
+  },
+  "analysis": "2-3 sentences explaining where the betting value is and why",
   "keyFactors": [
-    "Primary edge driver",
-    "Supporting factor",
-    "Public bias being exploited"
+    "Primary edge driver from analytics",
+    "Secondary supporting factor",
+    "Sharp intangible being exploited"
   ],
+  "shouldPass": false,
   "recommendedBet": {
     "betType": "spread",
-    "selection": "Team +3.5 or Under 215.5",
-    "line": -3.5,
-    "reasoning": "Why this bet type offers best value"
+    "selection": "${awayTeam} +3 or Under 45.5",
+    "line": -3,
+    "reasoning": "Why this specific bet offers the best value given your edge analysis"
   }
 }
 
-IMPORTANT: 
-- betType must be exactly "spread", "moneyline", or "total"
-- Generate realistic scores for ${sport}
-- Be honest if there's no clear edge
-- Return ONLY the JSON object, nothing else`
+**IMPORTANT RULES:**
+1. **confidenceRating** is 1-10 scale (1=no edge, 10=hammer)
+2. **confidence** is percentage 0-100 (for UI compatibility, map from confidenceRating × 10)
+3. If confidenceRating < 5, set **shouldPass: true** and set recommendedBet to null
+4. When shouldPass is true, explain in analysis WHY there's no clear edge
+5. **betType** must be exactly "spread", "moneyline", or "total"
+6. Generate realistic scores appropriate for ${sport} (${config.typicalScoreRange})
+7. Be brutally honest - passing is better than forcing weak picks
+8. All numeric fields in edgeAnalysis are optional - only include if you have data
+9. Return ONLY the JSON object, nothing else`
 }
 
 export type PredictionErrorType = 'quota_exceeded' | 'api_key_missing' | 'api_error' | 'parse_error'
@@ -240,7 +252,7 @@ export async function generatePrediction(
   matchup: MatchupInput
 ): Promise<PredictionResult> {
   const apiKey = process.env.GOOGLE_API_KEY
-  
+
   if (!apiKey) {
     throw new PredictionError(
       'api_key_missing',
@@ -250,18 +262,21 @@ export async function generatePrediction(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ 
-    model: 'gemini-2.0-flash',
+
+  // Use Gemini 2.0 Flash Thinking mode for deeper reasoning
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash-thinking-exp-1219',
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 8000,  // Increased for thinking mode
       responseMimeType: 'application/json'
     }
   })
 
   const prompt = buildPrompt(matchup)
 
-  console.log('=== GEMINI PREDICTION REQUEST ===')
+  console.log('=== GEMINI 3 THINKING MODE PREDICTION REQUEST ===')
+  console.log('Model: gemini-2.0-flash-thinking-exp-1219')
   console.log('Sport:', matchup.sport)
   console.log('Matchup:', matchup.awayTeam, '@', matchup.homeTeam)
   console.log('Date:', matchup.gameDate)
@@ -282,34 +297,59 @@ export async function generatePrediction(
 
     let raw: any
     try {
+      // Clean potential markdown artifacts
       const cleanedResponse = responseText
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim()
       raw = JSON.parse(cleanedResponse)
     } catch {
-      throw new PredictionError('parse_error', 'Invalid JSON from Gemini', responseText.substring(0, 100))
+      throw new PredictionError('parse_error', 'Invalid JSON from Gemini', responseText.substring(0, 200))
     }
 
+    // Build prediction result with new fields
     const prediction: PredictionResult = {
+      // Core fields
       predictedWinner: raw.predictedWinner || matchup.homeTeam,
-      confidence: Math.max(0, Math.min(100, raw.confidence || 50)),
-      predictedScore: raw.predictedScore,
+      confidence: Math.max(0, Math.min(100, raw.confidence || (raw.confidenceRating ? raw.confidenceRating * 10 : 50))),
+      predictedScore: raw.predictedScore || raw.modelProjection?.projectedScore,
       analysis: raw.analysis || '',
       keyFactors: raw.keyFactors || [],
-      edgeAnalysis: raw.edgeAnalysis || undefined,
-      recommendedBet: raw.recommendedBet ? {
+
+      // Edge analysis with new optional fields
+      edgeAnalysis: raw.edgeAnalysis ? {
+        marketLine: raw.edgeAnalysis.marketLine || '',
+        fairLine: raw.edgeAnalysis.fairLine || '',
+        edgePercent: raw.edgeAnalysis.edgePercent || 0,
+        publicSide: raw.edgeAnalysis.publicSide || '',
+        sharpSide: raw.edgeAnalysis.sharpSide || '',
+        reverseLineMovement: raw.edgeAnalysis.reverseLineMovement,
+        motivationalSpot: raw.edgeAnalysis.motivationalSpot,
+        weatherImpact: raw.edgeAnalysis.weatherImpact
+      } : undefined,
+
+      // Recommended bet (null if shouldPass is true)
+      recommendedBet: raw.shouldPass ? undefined : (raw.recommendedBet ? {
         betType: validateBetType(raw.recommendedBet.betType),
         selection: raw.recommendedBet.selection || raw.predictedWinner,
         line: raw.recommendedBet.line,
         reasoning: raw.recommendedBet.reasoning || ''
-      } : undefined
+      } : undefined),
+
+      // New Gemini 3 Thinking Mode fields
+      shouldPass: raw.shouldPass || false,
+      modelProjection: raw.modelProjection,
+      sharpAngle: raw.sharpAngle,
+      confidenceRating: raw.confidenceRating
     }
 
     console.log('=== PARSED PREDICTION ===')
     console.log('Winner:', prediction.predictedWinner)
-    console.log('Confidence:', prediction.confidence)
-    console.log('Recommended:', prediction.recommendedBet?.selection)
+    console.log('Confidence Rating:', prediction.confidenceRating, '/10')
+    console.log('Confidence %:', prediction.confidence, '%')
+    console.log('Should Pass:', prediction.shouldPass)
+    console.log('Recommended:', prediction.recommendedBet?.selection || 'PASS')
+    console.log('Sharp Angle:', prediction.sharpAngle)
 
     return prediction
   } catch (err: any) {

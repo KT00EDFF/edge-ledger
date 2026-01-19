@@ -203,7 +203,8 @@ export default function AiInsightsPanel() {
             <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
             <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
           </div>
-          <p className="text-center text-text-secondary text-sm">Analyzing matchup...</p>
+          <p className="text-center text-text-secondary text-sm font-medium">Deep analysis in progress...</p>
+          <p className="text-center text-text-muted text-xs mt-1">Using Gemini 3 Thinking Mode</p>
           {state.selectedMatchup && (
             <p className="text-center text-text-muted text-xs mt-1">
               {state.selectedMatchup.awayTeam.name} @ {state.selectedMatchup.homeTeam.name}
@@ -228,7 +229,42 @@ export default function AiInsightsPanel() {
 
       {state.aiPrediction && !state.aiLoading && (
         <div className="space-y-4">
-          {state.aiPrediction.recommendedBet && (
+          {state.aiPrediction.shouldPass && (
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="text-yellow-400 font-bold text-sm mb-1">Recommended: PASS</p>
+                  <p className="text-text-secondary text-xs leading-relaxed">
+                    No clear betting edge identified. {state.aiPrediction.analysis}
+                  </p>
+                  {state.aiPrediction.confidenceRating && (
+                    <p className="text-text-muted text-xs mt-2">
+                      Confidence Rating: {state.aiPrediction.confidenceRating}/10 (Threshold: 5+)
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!state.aiPrediction.shouldPass && state.aiPrediction.sharpAngle && (
+            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-purple-400 font-bold text-xs uppercase tracking-wider mb-1">Sharp Angle</p>
+                  <p className="text-text-secondary text-sm leading-relaxed">{state.aiPrediction.sharpAngle}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {state.aiPrediction.recommendedBet && !state.aiPrediction.shouldPass && (
             <button
               onClick={handleApplyBestBet}
               disabled={!bestOdds}
@@ -317,8 +353,13 @@ export default function AiInsightsPanel() {
               <p className={`font-bold text-2xl ${getConfidenceColor(state.aiPrediction.confidence)}`}>
                 {state.aiPrediction.confidence}%
               </p>
+              {state.aiPrediction.confidenceRating && (
+                <p className="text-text-muted text-xs mt-1">
+                  {state.aiPrediction.confidenceRating}/10 Rating
+                </p>
+              )}
             </div>
-            
+
             {state.aiPrediction.predictedScore && (
               <div className="p-3 bg-dark-hover rounded-lg">
                 <p className="text-text-muted text-[10px] uppercase tracking-wider mb-1">Projected Score</p>
@@ -330,6 +371,18 @@ export default function AiInsightsPanel() {
               </div>
             )}
           </div>
+
+          {state.aiPrediction.modelProjection && (
+            <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
+              <p className="text-indigo-400 text-[10px] uppercase tracking-wider font-medium mb-2">Model Projection</p>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-white font-bold text-lg">{state.aiPrediction.modelProjection.projectedScore.away}</span>
+                <span className="text-text-muted text-xs">-</span>
+                <span className="text-white font-bold text-lg">{state.aiPrediction.modelProjection.projectedScore.home}</span>
+              </div>
+              <p className="text-text-secondary text-xs leading-relaxed">{state.aiPrediction.modelProjection.methodology}</p>
+            </div>
+          )}
 
           {state.aiPrediction.edgeAnalysis && (
             <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
@@ -358,6 +411,24 @@ export default function AiInsightsPanel() {
                     <span className="text-text-muted text-xs">Estimated Edge</span>
                     <span className="text-accent-green font-bold">+{state.aiPrediction.edgeAnalysis.edgePercent}%</span>
                   </div>
+                </div>
+              )}
+              {state.aiPrediction.edgeAnalysis.reverseLineMovement && (
+                <div className="mt-3 pt-3 border-t border-blue-500/20">
+                  <p className="text-text-muted text-xs mb-1">Reverse Line Movement</p>
+                  <p className="text-accent-blue text-xs">{state.aiPrediction.edgeAnalysis.reverseLineMovement}</p>
+                </div>
+              )}
+              {state.aiPrediction.edgeAnalysis.motivationalSpot && (
+                <div className="mt-3 pt-3 border-t border-blue-500/20">
+                  <p className="text-text-muted text-xs mb-1">Motivational Spot</p>
+                  <p className="text-accent-blue text-xs">{state.aiPrediction.edgeAnalysis.motivationalSpot}</p>
+                </div>
+              )}
+              {state.aiPrediction.edgeAnalysis.weatherImpact && (
+                <div className="mt-3 pt-3 border-t border-blue-500/20">
+                  <p className="text-text-muted text-xs mb-1">Weather Impact</p>
+                  <p className="text-accent-blue text-xs">{state.aiPrediction.edgeAnalysis.weatherImpact}</p>
                 </div>
               )}
             </div>
