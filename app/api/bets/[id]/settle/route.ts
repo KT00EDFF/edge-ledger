@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { calculateProfit } from '@/lib/bet-sizing'
+import { calculateProfit, calculateBankrollReturn } from '@/lib/bet-sizing'
 import { createBankrollSnapshot } from '@/lib/analytics'
 
 export async function POST(
@@ -33,8 +33,11 @@ export async function POST(
       )
     }
 
-    // Calculate profit
+    // Calculate profit (net P/L for display)
     const profit = calculateProfit(bet.betSize, bet.odds, result)
+
+    // Calculate amount to return to bankroll
+    const bankrollReturn = calculateBankrollReturn(bet.betSize, bet.odds, result)
 
     // Update bet
     const updatedBet = await prisma.bet.update({
@@ -46,8 +49,8 @@ export async function POST(
       },
     })
 
-    // Update user's bankroll
-    const newBankroll = bet.user.currentBankroll + profit
+    // Update user's bankroll (add back the return amount)
+    const newBankroll = bet.user.currentBankroll + bankrollReturn
     await prisma.user.update({
       where: { id: bet.userId },
       data: {
