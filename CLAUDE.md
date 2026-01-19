@@ -109,14 +109,13 @@ edge-ledger/
 
 ### External APIs
 
-- **Google Gemini 2.0 Flash** (AI predictions) - Note: NOT OpenAI despite package.json
+- **Google Gemini 2.0 Flash** (AI predictions)
 - **The Odds API** (live sports odds)
 - **ESPN API** (game schedules, public API)
 
 ### State Management
 
-- **React Context + useReducer** (NOT Zustand, despite package.json)
-- **TanStack Query** (installed but NOT used)
+- **React Context + useReducer** (primary state management)
 - **Local Storage** (settings persistence)
 
 ### DevOps
@@ -750,9 +749,9 @@ interface NormalizedMatchup {
 
 ## AI Integration (Gemini)
 
-### Critical Note
+### Overview
 
-The app uses **Google Gemini 2.0 Flash**, NOT OpenAI. The `.env.example` file incorrectly references `OPENAI_API_KEY`, but the code uses `GOOGLE_API_KEY`.
+The app uses **Google Gemini 2.0 Flash** for AI-powered predictions. The `.env.example` file correctly uses `GOOGLE_API_KEY`.
 
 ### Location
 
@@ -859,21 +858,21 @@ const raw = JSON.parse(cleanedResponse)
 
 ## Critical Gotchas
 
-### 1. Zustand is NOT Used
+### 1. ~~Zustand is NOT Used~~ ✅ FIXED
 
-**Issue**: `zustand` is in `package.json` but NEVER imported/used anywhere.
+**Issue**: `zustand` was in `package.json` but NEVER imported/used anywhere.
 
 **Reality**: State management uses React Context + useReducer.
 
-**Action**: Can safely remove from dependencies or implement properly.
+**Resolution**: Removed from dependencies along with `openai`, `react-hook-form`, and `@tanstack/react-query`.
 
-### 2. Gemini, Not OpenAI
+### 2. ~~Gemini, Not OpenAI~~ ✅ FIXED
 
-**Issue**: `.env.example` says `OPENAI_API_KEY` and `openai` package is installed.
+**Issue**: `.env.example` said `OPENAI_API_KEY` and `openai` package was installed.
 
 **Reality**: Code uses `@google/generative-ai` and reads `GOOGLE_API_KEY`.
 
-**Action**: When setting up, use `GOOGLE_API_KEY`, not `OPENAI_API_KEY`.
+**Resolution**: Updated `.env.example` to use `GOOGLE_API_KEY` with correct documentation link. Removed unused `openai` package.
 
 ### 3. No Migration Files
 
@@ -891,24 +890,24 @@ const raw = JSON.parse(cleanedResponse)
 
 **Opportunity**: Could optimize by making pages Server Components where possible.
 
-### 5. Form Libraries Not Used
+### 5. ~~Form Libraries Not Used~~ ✅ FIXED
 
-**Issue**: `react-hook-form` and `zod` are installed.
+**Issue**: `react-hook-form` and `zod` were installed.
 
 **Reality**:
 - `zod` only used for API-side validation
 - `react-hook-form` NOT used anywhere
 - Forms use plain controlled inputs with `useState`
 
-**Action**: Can remove `react-hook-form` or implement properly.
+**Resolution**: Removed `react-hook-form` from dependencies. Kept `zod` as it's used for API validation.
 
-### 6. TanStack Query Not Used
+### 6. ~~TanStack Query Not Used~~ ✅ FIXED
 
-**Issue**: `@tanstack/react-query` is installed.
+**Issue**: `@tanstack/react-query` was installed.
 
 **Reality**: NOT used anywhere, manual `fetch` calls instead.
 
-**Action**: Can remove or implement for better caching/refetching.
+**Resolution**: Removed from dependencies.
 
 ### 7. Single User System
 
@@ -934,13 +933,18 @@ const raw = JSON.parse(cleanedResponse)
 
 **Action**: For production, consider Pino, Winston, or similar.
 
-### 10. Manual Docker Migrations
+### 10. ~~Manual Docker Migrations~~ ✅ FIXED
 
-**Issue**: After `docker-compose up`, app crashes until migrations run.
+**Issue**: After `docker-compose up`, app crashed until migrations were run manually.
 
-**Reality**: Must manually run `docker-compose exec app npx prisma migrate deploy`.
+**Reality**: Previously required manual `docker-compose exec app npx prisma migrate deploy`.
 
-**Action**: Could automate in Dockerfile or entrypoint script.
+**Resolution**: Created `docker-entrypoint.sh` script that:
+- Waits for database to be ready
+- Automatically runs migrations on container start
+- Then starts the Next.js server
+
+No manual intervention required anymore.
 
 ### 11. Dashboard Components Defined Inline
 
@@ -1399,5 +1403,10 @@ docker-compose logs -f app
 ---
 
 **Last Updated**: 2026-01-19
+
+**Recent Fixes**: Fixed 5 critical gotchas:
+- ✅ Removed unused dependencies (Zustand, OpenAI, react-hook-form, TanStack Query)
+- ✅ Updated .env.example to use GOOGLE_API_KEY instead of OPENAI_API_KEY
+- ✅ Automated Docker migrations with entrypoint script
 
 This document should be updated whenever significant architectural changes are made to the codebase.
