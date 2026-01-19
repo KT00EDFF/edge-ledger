@@ -88,7 +88,7 @@ export function calculatePayout(betSize: number, americanOdds: number): number {
 }
 
 /**
- * Calculate profit from bet result
+ * Calculate profit from bet result (net P/L for display)
  */
 export function calculateProfit(
   betSize: number,
@@ -100,4 +100,20 @@ export function calculateProfit(
 
   const payout = calculatePayout(betSize, americanOdds)
   return payout - betSize
+}
+
+/**
+ * Calculate amount to return to bankroll after bet settlement
+ * This is what gets added back to the user's bankroll after settlement
+ */
+export function calculateBankrollReturn(
+  betSize: number,
+  americanOdds: number,
+  result: 'Won' | 'Lost' | 'Push'
+): number {
+  if (result === 'Push') return betSize  // Return stake
+  if (result === 'Lost') return 0  // Lost stake (already deducted)
+
+  // Won: return full payout (stake + winnings)
+  return calculatePayout(betSize, americanOdds)
 }

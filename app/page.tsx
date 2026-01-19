@@ -123,10 +123,11 @@ export default function Home() {
               change={`${bankrollChange >= 0 ? '+' : ''}${bankrollChange.toFixed(2)}%`}
               positive={bankrollChange >= 0}
             />
-            <StatCard 
-              label="Total P/L" 
+            <StatCard
+              label="Total P/L"
               value={`${totalPL >= 0 ? '+' : ''}$${Math.abs(totalPL).toFixed(2)}`}
               positive={totalPL >= 0}
+              colorValue
             />
             <StatCard 
               label="Win Rate" 
@@ -302,23 +303,27 @@ export default function Home() {
   )
 }
 
-function StatCard({ 
-  label, 
-  value, 
-  change, 
-  subtext, 
-  positive 
-}: { 
+function StatCard({
+  label,
+  value,
+  change,
+  subtext,
+  positive,
+  colorValue
+}: {
   label: string
   value: string
   change?: string
   subtext?: string
   positive?: boolean
+  colorValue?: boolean
 }) {
   return (
     <div className="card">
       <p className="stat-label mb-1">{label}</p>
-      <p className="stat-value">{value}</p>
+      <p className={`stat-value ${colorValue ? (positive ? 'text-accent-green' : 'text-red-400') : ''}`}>
+        {value}
+      </p>
       {change && (
         <p className={`text-sm mt-1 ${positive ? 'text-accent-green' : 'text-red-400'}`}>
           {change}
